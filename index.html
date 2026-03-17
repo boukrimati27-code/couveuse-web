@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Couveuse ESP32-P4</title>
+<style>
+  :root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;padding:10px}
+  h1{color:var(--blue);text-align:center;padding:10px 0;font-size:1.4em}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
+  .card{background:var(--card);border:1px solid #333;border-radius:10px;padding:14px;text-align:center}
+  .card .val{font-size:2em;font-weight:bold;margin:6px 0}
+  .card .lbl{font-size:.75em;color:var(--gray)}
+  .card .sub{font-size:.8em;color:var(--gray);margin-top:4px}
+  .ok{color:var(--green)}.warn{color:var(--orange)}.err{color:var(--red)}
+  .status-bar{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .badge{padding:5px 12px;border-radius:20px;font-size:.78em;font-weight:bold;background:#222}
+  .badge.on{background:#1a3a1a;color:var(--green);border:1px solid var(--green)}
+  .badge.off{background:#222;color:var(--gray);border:1px solid #333}
+  .badge.alarm{background:#3a1a1a;color:var(--red);border:1px solid var(--red)}
+  h2{color:var(--orange);margin:14px 0 6px;font-size:1em}
+  .targets{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .target-input{display:flex;flex-direction:column;gap:4px}
+  .target-input label{font-size:.75em;color:var(--gray)}
+  .target-input input{background:#111;color:#fff;border:1px solid var(--blue);border-radius:6px;padding:6px 10px;width:120px;font-size:.9em}
+  button{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.9em;margin-top:6px}
+  button:hover{opacity:.85}
+  canvas{width:100%!important;max-height:160px;background:var(--card);border-radius:8px;border:1px solid #333;margin-top:8px}
+  .time-bar{text-align:right;color:var(--gray);font-size:.8em;padding:4px 0}
+  .counter-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .counter{background:var(--card);border:1px solid #333;border-radius:8px;padding:10px 16px;flex:1;min-width:140px}
+  .counter .c-val{font-size:1.3em;font-weight:bold;color:var(--orange)}
+  .counter .c-lbl{font-size:.72em;color:var(--gray);margin-top:3px}
+  footer{text-align:center;color:#444;font-size:.7em;padding:14px 0 4px}
+</style>
+</head>
+<body>
+<h1>&#x1F423; Couveuse ESP32-P4</h1>
+<div class="time-bar" id="timeBar">--:-- | --/--/----</div>
+
+<div class="grid" id="sensorCards">
+  <div class="card"><div class="lbl">TEMPÉRATURE</div><div class="val ok" id="vTemp">--.-°C</div><div class="sub">Cible: <span id="tTemp">--</span>°C</div></div>
+  <div class="card"><div class="lbl">HUMIDITÉ</div><div class="val ok" id="vHum">--.-%</div><div class="sub">Cible: <span id="tHum">--</span>%</div></div>
+  <div class="card"><div class="lbl">CO₂</div><div class="val" id="vCo2">---- ppm</div><div class="sub">Alarme: <span id="tCo2">--</span> ppm</div></div>
+</div>
+
+<h2>&#x26A1; ÉTAT SYSTÈME</h2>
+<div class="status-bar" id="statusBar">
+  <span class="badge off" id="bHeat">🔥 CHAUF: OFF</span>
+  <span class="badge off" id="bHumid">💧 HUMIDIF: OFF</span>
+  <span class="badge on"  id="bWater">💧 EAU: OK</span>
+  <span class="badge on"  id="bDoor">🚪 PORTE: OK</span>
+  <span class="badge on"  id="bSystem">✅ SYSTÈME: OK</span>
+</div>
+
+<h2>&#x23F1; COMPTEURS</h2>
+<div class="counter-row">
+  <div class="counter"><div class="c-val" id="cHeat">0h 00m</div><div class="c-lbl">Durée chauffage</div></div>
+  <div class="counter"><div class="c-val" id="cHumid">0h 00m</div><div class="c-lbl">Durée humidificateur</div></div>
+</div>
+
+<h2>&#x1F4CA; HISTORIQUE (1h)</h2>
+<canvas id="histChart" height="140"></canvas>
+
+<h2>&#x2699;&#xFE0F; MODIFIER LES CIBLES</h2>
+<div class="targets">
+  <div class="target-input"><label>Temp cible (°C)</label><input type="number" id="iTemp" step="0.1" min="35" max="40"></div>
+  <div class="target-input"><label>Hum cible (%)</label><input type="number" id="iHum" step="1" min="30" max="80"></div>
+  <div class="target-input"><label>Alarme CO2 (ppm)</label><input type="number" id="iCo2" step="100" min="1000" max="5000"></div>
+</div>
+<button onclick="sendTargets()">&#x2705; Appliquer</button>
+<span id="saveMsg" style="margin-left:12px;font-size:.8em;color:#27ae60"></span>
+
+<footer>
+  Couveuse ESP32-P4 &mdash; <span id="ipLabel"></span>
+  &mdash; Refresh: <span id="refreshLabel"></span> ms
+</footer>
+
+<script>
+// MQTT (HiveMQ Cloud)
+const MQTT_URL = "wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt";
+const MQTT_USER = "namir";
+const MQTT_PASS = "Moad.351969";
+const TOPIC_STATE = "couveuse/etat";
+const TOPIC_CMD   = "couveuse/cmd";
+
+// Rafraîchissement HTTP (secours) — ms
+var REFRESH = 100;
+
+var hist=[];
+function applyData(d){
+  document.getElementById('vTemp').textContent=d.temp.toFixed(1)+'°C';
+  document.getElementById('vHum').textContent=d.hum.toFixed(1)+'%';
+  document.getElementById('vCo2').textContent=Math.round(d.co2)+' ppm';
+  document.getElementById('tTemp').textContent=d.temp_target.toFixed(1);
+  document.getElementById('tHum').textContent=Math.round(d.hum_target);
+  document.getElementById('tCo2').textContent=Math.round(d.co2_alarm);
+  document.getElementById('timeBar').textContent=d.time+' | '+d.date;
+  document.getElementById('ipLabel').textContent=d.ip || 'HiveMQ';
+  document.getElementById('refreshLabel').textContent=REFRESH;
+
+  var te=Math.abs(d.temp-d.temp_target);
+  document.getElementById('vTemp').className='val '+(te<=0.3?'ok':te<=0.6?'warn':'err');
+  var he=Math.abs(d.hum-d.hum_target);
+  document.getElementById('vHum').className='val '+(he<=3?'ok':he<=6?'warn':'err');
+  document.getElementById('vCo2').className='val '+(d.co2<d.co2_alarm?'ok':'err');
+
+  setBadge('bHeat',d.heat_on,'🔥 CHAUF: ON','🔥 CHAUF: OFF');
+  setBadge('bHumid',d.humid_on,'💧 HUMIDIF: ON','💧 HUMIDIF: OFF');
+  setFaultBadge('bWater',d.water_ok,'💧 EAU: OK','💧 EAU: VIDE!');
+  setFaultBadge('bDoor',d.door_ok,'🚪 PORTE: OK','🚪 PORTE: OUVERTE!');
+  setFaultBadge('bSystem',d.system_ok,'✅ SYSTÈME: OK','⛔ SYSTÈME: ARRÊTÉ');
+
+  document.getElementById('cHeat').textContent=d.heat_h+'h '+String(d.heat_m).padStart(2,'0')+'m';
+  document.getElementById('cHumid').textContent=d.humid_h+'h '+String(d.humid_m).padStart(2,'0')+'m';
+
+  // Ne pas écraser pendant la saisie
+  var a=document.activeElement;
+  var iT=document.getElementById('iTemp');
+  var iH=document.getElementById('iHum');
+  var iC=document.getElementById('iCo2');
+  if(a!==iT) iT.value=d.temp_target;
+  if(a!==iH) iH.value=Math.round(d.hum_target);
+  if(a!==iC) iC.value=Math.round(d.co2_alarm);
+
+  hist=d.history || [];
+  drawChart();
+}
+
+function fetchDataHttp(){
+  // HTTP ne marchera pas depuis GitHub Pages vers ton ESP (CORS), c'est juste un secours local.
+  fetch('/data').then(r=>r.json()).then(applyData).catch(()=>{});
+}
+
+function setBadge(id,on,lblOn,lblOff){
+  var el=document.getElementById(id);
+  el.textContent=on?lblOn:lblOff;
+  el.className='badge '+(on?'on':'off');
+}
+function setFaultBadge(id,ok,lblOk,lblErr){
+  var el=document.getElementById(id);
+  el.textContent=ok?lblOk:lblErr;
+  el.className='badge '+(ok?'on':'alarm');
+}
+function sendTargets(){
+  var p={temp:parseFloat(document.getElementById('iTemp').value),
+         hum:parseFloat(document.getElementById('iHum').value),
+         co2:parseFloat(document.getElementById('iCo2').value)};
+  if(window.mqttClient && window.mqttClient.connected){
+    window.mqttClient.publish(TOPIC_CMD, JSON.stringify(p));
+    document.getElementById('saveMsg').textContent='✅ Cibles envoyées (MQTT)';
+    setTimeout(()=>{document.getElementById('saveMsg').textContent=''},3000);
+  }else{
+    document.getElementById('saveMsg').textContent='⚠️ MQTT non connecté';
+    setTimeout(()=>{document.getElementById('saveMsg').textContent=''},3000);
+  }
+}
+function drawChart(){
+  var c=document.getElementById('histChart');
+  var ctx=c.getContext('2d');
+  c.width=c.offsetWidth; c.height=140;
+  var w=c.width,h=c.height,n=hist.length;
+  if(n<2)return;
+  ctx.clearRect(0,0,w,h);
+  var tMin=35,tMax=40;
+  ctx.strokeStyle='#f39c12';ctx.lineWidth=2;ctx.beginPath();
+  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(hist[i].t-tMin)/(tMax-tMin)*h;i==0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+  var hMin=40,hMax=80;
+  ctx.strokeStyle='#4a90d9';ctx.lineWidth=2;ctx.beginPath();
+  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(hist[i].h-hMin)/(hMax-hMin)*h;i==0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+  ctx.font='11px Arial';
+  ctx.fillStyle='#f39c12';ctx.fillText('— Temp',8,14);
+  ctx.fillStyle='#4a90d9';ctx.fillText('— Hum',80,14);
+}
+
+function startMqtt(){
+  if(typeof mqtt === 'undefined') return false;
+  var opts={
+    username:MQTT_USER,
+    password:MQTT_PASS,
+    clientId:'web_'+Math.random().toString(16).slice(2),
+    reconnectPeriod:2000,
+    connectTimeout:5000,
+    clean:true
+  };
+  window.mqttClient = mqtt.connect(MQTT_URL, opts);
+  window.mqttClient.on('connect', function(){
+    window.mqttClient.subscribe(TOPIC_STATE);
+    document.getElementById('saveMsg').textContent='✅ Connecté (MQTT)';
+    setTimeout(()=>{document.getElementById('saveMsg').textContent=''},2000);
+    if(typeof httpTimer!=='undefined' && httpTimer){ clearInterval(httpTimer); httpTimer=null; }
+  });
+  window.mqttClient.on('message', function(topic, payload){
+    if(topic!==TOPIC_STATE) return;
+    try{ applyData(JSON.parse(payload.toString())); }catch(e){}
+  });
+  window.mqttClient.on('error', function(){
+    document.getElementById('saveMsg').textContent='⚠️ Erreur MQTT';
+    setTimeout(()=>{document.getElementById('saveMsg').textContent=''},2000);
+  });
+  return true;
+}
+
+// charger mqtt.js
+(function(){
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/mqtt/dist/mqtt.min.js';
+  s.onload=function(){ startMqtt(); };
+  s.onerror=function(){
+    document.getElementById('saveMsg').textContent='⚠️ mqtt.js non chargé';
+    setTimeout(()=>{document.getElementById('saveMsg').textContent=''},3000);
+  };
+  document.head.appendChild(s);
+})();
+
+// (optionnel) HTTP en secours local uniquement
+// fetchDataHttp();
+var httpTimer=null;
+window.addEventListener('resize',drawChart);
+</script>
+</body>
+</html>
