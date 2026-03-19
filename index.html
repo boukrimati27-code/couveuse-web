@@ -5,123 +5,133 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Couveuse — Accès distant</title>
 <style>
-:root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888;--purple:#9b59b6;--cyan:#00bcd4}
+:root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888;--purple:#9b59b6;--cyan:#00bcd4;--yellow:#f1c40f;--pink:#e91e8c}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:#fff;font-family:Arial,sans-serif}
-.header{background:#111128;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222244;flex-wrap:wrap;gap:8px}
-.header h1{color:var(--blue);font-size:1.2em}
+body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;font-size:14px}
+.hdr{background:#111128;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222244;flex-wrap:wrap;gap:6px}
+.hdr h1{color:var(--blue);font-size:1.15em}
 .hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.time-bar{color:var(--gray);font-size:.76em}
-#mqttStatus{font-size:.72em;padding:3px 10px;border-radius:10px;background:#222;color:var(--gray)}
-.tabs{display:flex;background:#0a0a18;border-bottom:2px solid #222244;overflow-x:auto}
-.tab{padding:11px 18px;cursor:pointer;font-size:.84em;font-weight:bold;color:var(--gray);border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+#mqttSt{font-size:.72em;padding:3px 10px;border-radius:10px;background:#222;color:var(--gray);transition:all .3s}
+.timebar{color:var(--gray);font-size:.75em}
+.tabs{display:flex;background:#0a0a18;border-bottom:2px solid #222244;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 15px;cursor:pointer;font-size:.82em;font-weight:bold;color:var(--gray);border-bottom:3px solid transparent;white-space:nowrap;user-select:none}
 .tab:hover{color:#fff;background:#111128}
 .tab.active{color:#fff}
-.tab.active.t-mon{border-bottom-color:var(--blue)}
-.tab.active.t-mot{border-bottom-color:var(--orange)}
-.tab.active.t-tra{border-bottom-color:var(--cyan)}
-.tab.active.t-fan{border-bottom-color:var(--purple)}
-.pane{display:none;padding:12px 14px}.pane.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin:9px 0}
-.card{background:var(--card);border:1px solid #333;border-radius:10px;padding:13px;text-align:center}
-.card .val{font-size:1.9em;font-weight:bold;margin:5px 0}
-.card .lbl{font-size:.72em;color:var(--gray)}
-.card .sub{font-size:.76em;color:var(--gray);margin-top:3px}
+.t-mon.active{border-bottom-color:var(--blue)}.t-mot.active{border-bottom-color:var(--orange)}
+.t-tra.active{border-bottom-color:var(--cyan)}.t-fan.active{border-bottom-color:var(--purple)}
+.t-gfx.active{border-bottom-color:var(--green)}.t-sta.active{border-bottom-color:var(--yellow)}
+.t-inc.active{border-bottom-color:var(--pink)}.t-lum.active{border-bottom-color:#fff}
+.pane{display:none;padding:11px 13px}.pane.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+.card{background:var(--card);border:1px solid #2a2a3a;border-radius:10px;padding:12px;text-align:center}
+.card .val{font-size:1.8em;font-weight:bold;margin:5px 0}
+.card .lbl{font-size:.7em;color:var(--gray)}.card .sub{font-size:.74em;color:var(--gray);margin-top:3px}
 .ok{color:var(--green)}.warn{color:var(--orange)}.err{color:var(--red)}
-.status-bar{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0}
-.badge{padding:5px 11px;border-radius:20px;font-size:.76em;font-weight:bold}
+.status-bar{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}
+.badge{padding:4px 10px;border-radius:20px;font-size:.74em;font-weight:bold}
 .badge.on{background:#1a3a1a;color:var(--green);border:1px solid var(--green)}
-.badge.off{background:#222;color:var(--gray);border:1px solid #333}
+.badge.off{background:#1a1a1a;color:var(--gray);border:1px solid #333}
 .badge.alarm{background:#3a1a1a;color:var(--red);border:1px solid var(--red)}
-h2{margin:13px 0 6px;font-size:.92em}
-.targets{display:flex;gap:9px;flex-wrap:wrap;margin:7px 0}
-.ti{display:flex;flex-direction:column;gap:4px}
-.ti label{font-size:.72em;color:var(--gray)}
-.ti input{background:#111;color:#fff;border:1px solid var(--blue);border-radius:6px;padding:5px 9px;width:115px;font-size:.88em}
-.btn{border:none;border-radius:8px;padding:7px 15px;cursor:pointer;font-size:.87em;font-weight:bold;transition:opacity .15s}
-.btn:hover{opacity:.82}
+h2{margin:12px 0 6px;font-size:.9em}
+.sep{border:none;border-top:1px solid #222244;margin:12px 0}
+.ti{display:flex;flex-direction:column;gap:3px}
+.ti label{font-size:.7em;color:var(--gray)}
+.ti input{background:#111;color:#fff;border:1px solid var(--blue);border-radius:6px;padding:4px 8px;width:110px;font-size:.85em}
+.targets{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0}
+.info{background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:8px 12px;margin:7px 0;font-size:.78em;color:#aaa;line-height:1.55}
+.info.warn{background:#1a1000;border-color:#3a2200}
+.btn{border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.84em;font-weight:bold;transition:opacity .15s}
+.btn:hover{opacity:.8}
 .btn-blue{background:var(--blue);color:#fff}.btn-green{background:var(--green);color:#fff}
 .btn-orange{background:var(--orange);color:#fff}.btn-red{background:var(--red);color:#fff}
-.btn-gray{background:#2a2a3a;color:#ccc}.btn-cyan{background:var(--cyan);color:#000}
-.btn-purple{background:var(--purple);color:#fff}.btn-sm{padding:5px 10px;font-size:.79em;border-radius:6px}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;align-items:center}
-.counter-row{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0}
-.counter{background:var(--card);border:1px solid #333;border-radius:8px;padding:9px 14px;flex:1;min-width:130px}
-.counter .c-val{font-size:1.2em;font-weight:bold;color:var(--orange)}
-.counter .c-lbl{font-size:.71em;color:var(--gray);margin-top:3px}
-canvas{width:100%!important;max-height:150px;background:var(--card);border-radius:8px;border:1px solid #333;margin-top:7px}
-.sr{display:flex;align-items:center;gap:9px;margin:8px 0;flex-wrap:wrap}
-.sr label{min-width:185px;font-size:.82em;color:var(--gray)}
-.vb{background:#111;border:1px solid #333;border-radius:6px;padding:5px 11px;min-width:76px;text-align:center;font-weight:bold}
-.sep{border:none;border-top:1px solid #222244;margin:13px 0}
-.info{background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:9px 13px;margin:8px 0;font-size:.79em;color:#aaa;line-height:1.6}
-.motor-bar{background:#111;border:1px solid #333;border-radius:6px;height:20px;position:relative;margin:6px 0;overflow:hidden}
-.motor-cursor{position:absolute;top:2px;width:8px;height:16px;background:var(--orange);border-radius:3px;transform:translateX(-50%);transition:left .4s}
-.motor-center-mark{position:absolute;top:0;left:50%;width:2px;height:100%;background:#444;transform:translateX(-50%)}
-.sw-row{display:flex;align-items:center;gap:10px}
-.sw{width:46px;height:25px;background:#333;border-radius:13px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.sw.on{background:var(--green)}.sw::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;background:#fff;border-radius:50%;transition:left .2s}
-.sw.on::after{left:24px}
-.spd-bar{background:#1a1a2e;border-radius:4px;height:14px;margin:5px 0;overflow:hidden;border:1px solid #333}
-.spd-fill{height:100%;border-radius:4px;background:var(--purple);transition:width .5s}
-.save-msg{font-size:.79em;color:var(--green);margin-left:8px}
-.num-in{background:#111;color:#fff;border:1px solid;border-radius:6px;padding:5px;width:62px;text-align:center;font-size:.9em}
-.no-data{text-align:center;padding:40px 20px;color:var(--gray);font-size:.9em}
-footer{text-align:center;color:#2a2a3a;font-size:.67em;padding:10px 0}
+.btn-gray{background:#2a2a3a;color:#bbb}.btn-cyan{background:var(--cyan);color:#000}
+.btn-purple{background:var(--purple);color:#fff}.btn-yellow{background:var(--yellow);color:#000}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-sm{padding:4px 10px;font-size:.78em;border-radius:6px}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0;align-items:center}
+.save-msg{font-size:.77em;color:var(--green);margin-left:7px}
+.cnt-row{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0}
+.cnt{background:var(--card);border:1px solid #2a2a3a;border-radius:8px;padding:8px 13px;flex:1;min-width:120px}
+.cnt .cv{font-size:1.15em;font-weight:bold;color:var(--orange)}.cnt .cl{font-size:.68em;color:var(--gray);margin-top:2px}
+canvas{width:100%!important;background:var(--card);border-radius:8px;border:1px solid #2a2a3a;display:block}
+.mbar{background:#111;border:1px solid #2a2a3a;border-radius:6px;height:18px;position:relative;margin:5px 0;overflow:hidden}
+.mbar-cur{position:absolute;top:1px;width:8px;height:16px;background:var(--orange);border-radius:3px;transform:translateX(-50%);transition:left .4s}
+.mbar-mid{position:absolute;top:0;left:50%;width:2px;height:100%;background:#444;transform:translateX(-50%)}
+.sr{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
+.sr label{min-width:180px;font-size:.8em;color:var(--gray)}
+.vb{background:#111;border:1px solid #2a2a3a;border-radius:6px;padding:4px 10px;min-width:72px;text-align:center;font-weight:bold}
+.sw-row{display:flex;align-items:center;gap:8px}
+.sw{width:44px;height:23px;background:#333;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.sw.on{background:var(--green)}.sw::after{content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;background:#fff;border-radius:50%;transition:left .2s}
+.sw.on::after{left:23px}
+.spd-bar{background:#1a1a2e;border-radius:4px;height:13px;margin:4px 0;overflow:hidden;border:1px solid #2a2a3a}
+.spd-fill{height:100%;border-radius:4px;transition:width .5s}
+.lum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
+.lum-card{background:var(--card);border:2px solid #2a2a3a;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
+.lum-card:hover{opacity:.85}
+.lum-card.on{border-color:var(--yellow);background:#1a1a00;box-shadow:0 0 18px rgba(241,196,15,.2)}
+.lum-icon{font-size:2em;margin-bottom:6px}
+.lum-name{font-size:.85em;font-weight:bold;color:#ccc}
+.lum-st{font-size:.72em;color:var(--gray);margin-top:3px}
+.lum-card.on .lum-st{color:var(--yellow)}
+.chart-title{font-size:.79em;color:var(--gray);margin:10px 0 3px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase}
+.stbl{width:100%;border-collapse:collapse;margin:7px 0;font-size:.81em}
+.stbl th{background:#111128;color:var(--gray);padding:6px 9px;text-align:left;border-bottom:1px solid #222244}
+.stbl td{padding:6px 9px;border-bottom:1px solid #1a1a2e}
+.stbl tr:hover td{background:#111128}
+.inc-progress{background:#111;border-radius:8px;height:14px;overflow:hidden;margin:8px 0;border:1px solid #2a2a3a}
+.inc-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--orange),var(--red));transition:width .5s}
+.num-in{background:#111;color:#fff;border:1px solid;border-radius:6px;padding:4px;width:58px;text-align:center;font-size:.88em}
+footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
 </style>
 </head>
 <body>
-
-<div class="header">
-  <h1>&#x1F423; Couveuse ESP32-P4 — Accès distant</h1>
+<div class="hdr">
+  <h1>🥚 Couveuse ESP32-P4</h1>
   <div class="hright">
-    <span id="mqttStatus">⚫ Connexion...</span>
-    <div class="time-bar" id="timeBar">--:-- | --/--/----</div>
+    <span id="mqttSt">⚫ Connexion...</span>
+    <span class="timebar" id="tb">--:-- | --/--/----</span>
   </div>
 </div>
-
 <div class="tabs">
-  <div class="tab t-mon active" onclick="showTab('mon',this)">📊 Moniteur</div>
-  <div class="tab t-mot"        onclick="showTab('mot',this)">⚙️ Moteur</div>
-  <div class="tab t-tra"        onclick="showTab('tra',this)">🌬️ Trappe</div>
-  <div class="tab t-fan"        onclick="showTab('fan',this)">💨 Ventilateur</div>
+  <div class="tab t-mon active" onclick="ST('mon',this)">📊 Moniteur</div>
+  <div class="tab t-mot" onclick="ST('mot',this)">⚙️ Moteur</div>
+  <div class="tab t-tra" onclick="ST('tra',this)">🌬️ Trappe</div>
+  <div class="tab t-fan" onclick="ST('fan',this)">💨 Ventilo</div>
+  <div class="tab t-gfx" onclick="ST('gfx',this)">📈 Graphiques</div>
+  <div class="tab t-sta" onclick="ST('sta',this)">📋 Statistiques</div>
+  <div class="tab t-inc" onclick="ST('inc',this)">🥚 Incubation</div>
+  <div class="tab t-lum" onclick="ST('lum',this)">💡 Lumières</div>
 </div>
 
 <!-- MONITEUR -->
 <div class="pane active" id="pane-mon">
-  <div id="noDataMon" class="no-data" style="display:none">⏳ En attente des données MQTT...</div>
-  <div id="dataMon">
-    <div class="grid">
-      <div class="card"><div class="lbl">TEMPÉRATURE</div><div class="val ok" id="vTemp">--.-°C</div><div class="sub">Cible: <span id="tTemp">--</span>°C</div></div>
-      <div class="card"><div class="lbl">HUMIDITÉ</div><div class="val ok" id="vHum">--.-%</div><div class="sub">Cible: <span id="tHum">--</span>%</div></div>
-      <div class="card"><div class="lbl">CO₂</div><div class="val" id="vCo2">---- ppm</div><div class="sub">Alarme: <span id="tCo2">--</span> ppm</div></div>
-    </div>
-    <h2 style="color:var(--blue)">⚡ ÉTAT SYSTÈME</h2>
-    <div class="status-bar">
-      <span class="badge off" id="bHeat">🔥 CHAUF: OFF</span>
-      <span class="badge off" id="bHumid">💧 HUMIDIF: OFF</span>
-      <span class="badge on"  id="bWater">💧 EAU: OK</span>
-      <span class="badge on"  id="bDoor">🚪 PORTE: OK</span>
-      <span class="badge on"  id="bSystem">✅ SYSTÈME: OK</span>
-    </div>
-    <h2 style="color:var(--blue)">⏱ COMPTEURS</h2>
-    <div class="counter-row">
-      <div class="counter"><div class="c-val" id="cHeat">--</div><div class="c-lbl">Durée chauffage</div></div>
-      <div class="counter"><div class="c-val" id="cHumid">--</div><div class="c-lbl">Durée humidificateur</div></div>
-      <div class="counter"><div class="c-val" id="cTurns">--</div><div class="c-lbl">Retournements</div></div>
-    </div>
-    <h2 style="color:var(--blue)">📈 HISTORIQUE (1h)</h2>
-    <canvas id="histChart" height="140"></canvas>
-    <h2 style="color:var(--blue)">⚙️ CIBLES</h2>
-    <div class="targets">
-      <div class="ti"><label>Temp cible (°C)</label><input type="number" id="iTemp" step="0.1" min="35" max="40"></div>
-      <div class="ti"><label>Hum cible (%)</label><input type="number" id="iHum" step="1" min="30" max="80"></div>
-      <div class="ti"><label>Alarme CO2 (ppm)</label><input type="number" id="iCo2" step="100" min="1000" max="5000"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-blue" onclick="sendTargets()">✅ Appliquer</button>
-      <span class="save-msg" id="saveMsgMon"></span>
-    </div>
+  <div class="grid">
+    <div class="card"><div class="lbl">TEMPÉRATURE</div><div class="val ok" id="vT">--°C</div><div class="sub">Cible: <span id="tT">--</span>°C</div></div>
+    <div class="card"><div class="lbl">HUMIDITÉ</div><div class="val ok" id="vH">--%</div><div class="sub">Cible: <span id="tH">--</span>%</div></div>
+    <div class="card"><div class="lbl">CO₂</div><div class="val" id="vC">-- ppm</div><div class="sub">Alarme: <span id="tC">--</span></div></div>
+  </div>
+  <h2 style="color:var(--blue)">⚡ ÉTAT</h2>
+  <div class="status-bar">
+    <span class="badge off" id="bHeat">🔥 CHAUF</span><span class="badge off" id="bHumid">💧 HUMIDIF</span>
+    <span class="badge on" id="bWater">💧 EAU</span><span class="badge on" id="bDoor">🚪 PORTE</span>
+    <span class="badge on" id="bSys">✅ SYSTÈME</span>
+  </div>
+  <div class="cnt-row">
+    <div class="cnt"><div class="cv" id="cHeat">--</div><div class="cl">Durée chauffage</div></div>
+    <div class="cnt"><div class="cv" id="cHumid">--</div><div class="cl">Durée humidificateur</div></div>
+    <div class="cnt"><div class="cv" id="cTurns">--</div><div class="cl">Retournements</div></div>
+  </div>
+  <h2 style="color:var(--blue)">⚙️ CIBLES</h2>
+  <div class="targets">
+    <div class="ti"><label>Temp (°C)</label><input type="number" id="iT" step="0.1" min="35" max="40"></div>
+    <div class="ti"><label>Hum (%)</label><input type="number" id="iH" step="1" min="30" max="80"></div>
+    <div class="ti"><label>CO2 alarme</label><input type="number" id="iC" step="100" min="1000" max="5000"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="sendTargets()">✅ Appliquer</button>
+    <span class="save-msg" id="smMon"></span>
   </div>
 </div>
 
@@ -129,363 +139,382 @@ footer{text-align:center;color:#2a2a3a;font-size:.67em;padding:10px 0}
 <div class="pane" id="pane-mot">
   <div class="grid">
     <div class="card"><div class="lbl">POSITION</div><div class="val" id="mPos" style="color:var(--orange)">--</div></div>
-    <div class="card"><div class="lbl">DIRECTION</div><div class="val" id="mDir" style="color:var(--orange);font-size:1.1em">--</div></div>
+    <div class="card"><div class="lbl">DIRECTION</div><div class="val" id="mDir" style="color:var(--orange);font-size:1em">--</div></div>
     <div class="card"><div class="lbl">RETOURNEMENTS</div><div class="val" id="mTurns" style="color:var(--orange)">--</div></div>
-    <div class="card"><div class="lbl">PHASE</div><div class="val" id="mPhase" style="color:var(--gray);font-size:1em">--</div></div>
+    <div class="card"><div class="lbl">PHASE</div><div class="val" id="mPhase" style="color:var(--gray);font-size:.88em">--</div></div>
   </div>
-  <div style="margin:4px 0 2px;font-size:.75em;color:var(--gray)">Position (Gauche ← → Droite)</div>
-  <div class="motor-bar"><div class="motor-center-mark"></div><div class="motor-cursor" id="mCursor" style="left:50%"></div></div>
-  <div style="display:flex;justify-content:space-between;font-size:.71em;color:var(--gray);margin-bottom:8px">
-    <span id="mLeft">G: --</span><span>C: <span id="mCenter">--</span></span><span id="mRight">D: --</span>
+  <div style="font-size:.72em;color:var(--gray);margin:5px 0 2px">Position (G ← → D)</div>
+  <div class="mbar"><div class="mbar-mid"></div><div class="mbar-cur" id="mCur" style="left:50%"></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:.68em;color:var(--gray);margin-bottom:7px">
+    <span id="mL">G:--</span><span>C:<span id="mCen">--</span></span><span id="mR">D:--</span>
   </div>
   <hr class="sep">
   <h2 style="color:var(--orange)">🔧 RÉGLAGES</h2>
   <div class="sr"><label>Durée trajet G↔D</label>
-    <button class="btn btn-gray btn-sm" onclick="cmd({motor_cmd:'travel_dec'})">−</button>
-    <div class="vb" id="mTravel" style="color:var(--orange)">-- s</div>
-    <button class="btn btn-gray btn-sm" onclick="cmd({motor_cmd:'travel_inc'})">+</button>
-    <span style="font-size:.75em;color:var(--gray)">pas 0.5 s</span>
+    <button class="btn btn-gray btn-sm" onclick="C({motor_cmd:'travel_dec'})">−</button>
+    <div class="vb" id="mTrav" style="color:var(--orange)">-- s</div>
+    <button class="btn btn-gray btn-sm" onclick="C({motor_cmd:'travel_inc'})">+</button>
+    <span style="font-size:.72em;color:var(--gray)">pas 0.5s</span>
   </div>
-  <div class="sr"><label>Intervalle retournement auto</label>
-    <button class="btn btn-gray btn-sm" onclick="cmd({motor_cmd:'turn_dec'})">−</button>
-    <div class="vb" id="mInterval" style="color:var(--orange)">-- h</div>
-    <button class="btn btn-gray btn-sm" onclick="cmd({motor_cmd:'turn_inc'})">+</button>
-    <span style="font-size:.75em;color:var(--gray)">1 h – 12 h</span>
+  <div class="sr"><label>Intervalle retournement</label>
+    <button class="btn btn-gray btn-sm" onclick="C({motor_cmd:'turn_dec'})">−</button>
+    <div class="vb" id="mInt" style="color:var(--orange)">-- h</div>
+    <button class="btn btn-gray btn-sm" onclick="C({motor_cmd:'turn_inc'})">+</button>
+    <span style="font-size:.72em;color:var(--gray)">1h–12h</span>
   </div>
   <hr class="sep">
   <h2 style="color:var(--orange)">🎮 COMMANDES</h2>
   <div class="btn-row">
-    <button class="btn btn-orange" onclick="cmd({motor_cmd:'go_left'})">⬅ GAUCHE</button>
-    <button class="btn btn-red btn-sm" onclick="cmd({motor_cmd:'stop'})">⏹ STOP</button>
-    <button class="btn btn-orange" onclick="cmd({motor_cmd:'go_right'})">DROITE ➡</button>
-    <button class="btn btn-green btn-sm" onclick="cmd({motor_cmd:'go_center'})">⌖ CENTRE</button>
+    <button class="btn btn-orange" onclick="C({motor_cmd:'go_left'})">⬅ GAUCHE</button>
+    <button class="btn btn-red btn-sm" onclick="C({motor_cmd:'stop'})">⏹ STOP</button>
+    <button class="btn btn-orange" onclick="C({motor_cmd:'go_right'})">DROITE ➡</button>
+    <button class="btn btn-green btn-sm" onclick="C({motor_cmd:'go_center'})">⌖ CENTRE</button>
   </div>
-  <div class="btn-row" style="margin-top:10px">
-    <button class="btn btn-gray" onclick="cmd({motor_cmd:'save'},'saveMsgMot','Sauvegardé')">💾 Sauvegarder</button>
-    <span class="save-msg" id="saveMsgMot"></span>
+  <hr class="sep">
+  <h2 style="color:var(--orange)">🧪 TEST MOTEUR</h2>
+  <div class="btn-row">
+    <button class="btn btn-yellow" id="btnMT" onclick="toggleMotTest()">▶ Lancer test G→D→Centre</button>
+    <span class="save-msg" id="smMot"></span>
   </div>
-  <div class="info" style="background:#1a1000;border-color:#3a2200">⚠️ GAUCHE/DROITE = impulsion unique. Déplacement continu → écran tactile.</div>
+  <div class="info warn">⚠️ GAUCHE/DROITE = impulsion unique. Test = cycle complet automatique.</div>
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn btn-gray" onclick="C({motor_cmd:'save'},'smMot','Sauvegardé')">💾 Sauvegarder flash</button>
+  </div>
 </div>
 
 <!-- TRAPPE -->
 <div class="pane" id="pane-tra">
   <div class="grid">
-    <div class="card"><div class="lbl">TRAPPE</div><div class="val" id="tpState" style="color:var(--cyan)">--</div></div>
-    <div class="card"><div class="lbl">MODE AUTO</div><div class="val" id="tpAutoSt" style="color:var(--gray);font-size:1em">--</div></div>
-    <div class="card"><div class="lbl">HORAIRES</div><div class="val" id="tpHorSt" style="color:var(--gray);font-size:.85em">--</div></div>
-    <div class="card"><div class="lbl">SYNCHRO VENTILO</div><div class="val" id="tpSyncSt" style="color:var(--gray);font-size:1em">--</div></div>
+    <div class="card"><div class="lbl">TRAPPE</div><div class="val" id="tpSt" style="color:var(--cyan)">--</div></div>
+    <div class="card"><div class="lbl">MODE AUTO</div><div class="val" id="tpA" style="color:var(--gray);font-size:.88em">--</div></div>
+    <div class="card"><div class="lbl">HORAIRES</div><div class="val" id="tpHr" style="color:var(--gray);font-size:.78em">--</div></div>
+    <div class="card"><div class="lbl">SYNCHRO</div><div class="val" id="tpSy" style="color:var(--gray);font-size:.88em">--</div></div>
   </div>
   <div class="btn-row">
-    <button class="btn btn-green" onclick="cmd({trappe_cmd:'open'},'saveMsgTra','Trappe ouverte')">▲ OUVRIR</button>
-    <button class="btn btn-red"   onclick="cmd({trappe_cmd:'close'},'saveMsgTra','Trappe fermée')">▼ FERMER</button>
+    <button class="btn btn-green" onclick="C({trappe_cmd:'open'},'smTra','Ouverte')">▲ OUVRIR</button>
+    <button class="btn btn-red" onclick="C({trappe_cmd:'close'},'smTra','Fermée')">▼ FERMER</button>
+    <span class="save-msg" id="smTra"></span>
   </div>
   <hr class="sep">
-  <h2 style="color:var(--cyan)">🤖 MODE AUTOMATIQUE</h2>
-  <div class="sr"><label>Activer mode auto (T° + CO₂)</label>
-    <div class="sw-row"><div class="sw" id="swAuto" onclick="cmd({trappe_cmd:'toggle_auto'},'saveMsgTra')"></div>
-    <span id="lblAuto" style="font-size:.83em;color:var(--gray)">--</span></div>
+  <h2 style="color:var(--cyan)">🤖 MODE AUTO</h2>
+  <div class="sr"><label>Activer mode auto</label>
+    <div class="sw-row"><div class="sw" id="swAuto" onclick="C({trappe_cmd:'toggle_auto'},'smTra')"></div><span id="lbAuto" style="font-size:.8em;color:var(--gray)">--</span></div>
   </div>
-  <div class="sr"><label>Seuil température déclenchement</label>
-    <button class="btn btn-gray btn-sm" onclick="cmd({trappe_cmd:'tseuil_dec'},'saveMsgTra','Seuil -0.5°C')">−</button>
-    <div class="vb" id="tpTseuil" style="color:var(--cyan)">--°C</div>
-    <button class="btn btn-gray btn-sm" onclick="cmd({trappe_cmd:'tseuil_inc'},'saveMsgTra','Seuil +0.5°C')">+</button>
+  <div class="sr"><label>Seuil température (°C)</label>
+    <button class="btn btn-gray btn-sm" onclick="C({trappe_cmd:'tseuil_dec'},'smTra','−0.5°C')">−</button>
+    <div class="vb" id="tpTs" style="color:var(--cyan)">--°C</div>
+    <button class="btn btn-gray btn-sm" onclick="C({trappe_cmd:'tseuil_inc'},'smTra','+0.5°C')">+</button>
   </div>
-  <div class="sr"><label>Synchro proportionnelle ventilo→trappe</label>
-    <div class="sw-row"><div class="sw" id="swSync" onclick="cmd({trappe_cmd:'toggle_sync'},'saveMsgTra')"></div>
-    <span id="lblSync" style="font-size:.83em;color:var(--gray)">--</span></div>
+  <div class="sr"><label>Synchro ventilo→trappe</label>
+    <div class="sw-row"><div class="sw" id="swSync" onclick="C({trappe_cmd:'toggle_sync'},'smTra')"></div><span id="lbSync" style="font-size:.8em;color:var(--gray)">--</span></div>
   </div>
   <hr class="sep">
-  <h2 style="color:var(--cyan)">🕐 HORAIRES D'OUVERTURE</h2>
-  <div class="sr"><label>Activer plage horaire</label>
-    <div class="sw-row"><div class="sw" id="swHor" onclick="cmd({trappe_cmd:'toggle_hor'},'saveMsgTra')"></div>
-    <span id="lblHor" style="font-size:.83em;color:var(--gray)">--</span></div>
+  <h2 style="color:var(--cyan)">🕐 HORAIRES</h2>
+  <div class="sr"><label>Activer horaires</label>
+    <div class="sw-row"><div class="sw" id="swHor" onclick="C({trappe_cmd:'toggle_hor'},'smTra')"></div><span id="lbHor" style="font-size:.8em;color:var(--gray)">--</span></div>
   </div>
-  <div class="sr" style="gap:6px">
+  <div class="sr" style="gap:5px">
     <label>Ouverture</label>
-    <input class="num-in" type="number" id="tpDH" min="0" max="23" style="border-color:var(--cyan)">h
-    <input class="num-in" type="number" id="tpDM" min="0" max="55" step="5" style="border-color:var(--cyan)">min
-    <span style="color:var(--gray);margin:0 4px">→</span>
+    <input class="num-in" type="number" id="tDH" min="0" max="23" style="border-color:var(--cyan)">h
+    <input class="num-in" type="number" id="tDM" min="0" max="55" step="5" style="border-color:var(--cyan)">min →
     <label style="min-width:auto">Fermeture</label>
-    <input class="num-in" type="number" id="tpFH" min="0" max="23" style="border-color:var(--cyan)">h
-    <input class="num-in" type="number" id="tpFM" min="0" max="55" step="5" style="border-color:var(--cyan)">min
+    <input class="num-in" type="number" id="tFH" min="0" max="23" style="border-color:var(--cyan)">h
+    <input class="num-in" type="number" id="tFM" min="0" max="55" step="5" style="border-color:var(--cyan)">min
   </div>
-  <div class="btn-row" style="margin-top:10px">
-    <button class="btn btn-cyan" onclick="saveTrappeHoraires()">💾 Sauvegarder horaires</button>
-    <span class="save-msg" id="saveMsgTra"></span>
-  </div>
+  <div class="btn-row"><button class="btn btn-cyan" onclick="saveTrappeHor()">💾 Sauvegarder horaires</button></div>
 </div>
 
-<!-- VENTILATEUR -->
+<!-- VENTILO -->
 <div class="pane" id="pane-fan">
   <div class="grid">
-    <div class="card"><div class="lbl">VITESSE</div><div class="val" id="fSpeed" style="color:var(--purple)">-- %</div></div>
-    <div class="card"><div class="lbl">ÉTAT</div><div class="val" id="fState" style="color:var(--gray);font-size:.9em">--</div></div>
-    <div class="card"><div class="lbl">SEUIL CO₂</div><div class="val" id="fCo2" style="color:var(--gray);font-size:1.1em">-- ppm</div></div>
+    <div class="card"><div class="lbl">VITESSE</div><div class="val" id="fSpd" style="color:var(--purple)">--%</div></div>
+    <div class="card"><div class="lbl">ÉTAT</div><div class="val" id="fSt" style="color:var(--gray);font-size:.85em">--</div></div>
+    <div class="card"><div class="lbl">SEUIL CO₂</div><div class="val" id="fCo2" style="color:var(--gray);font-size:.95em">--</div></div>
   </div>
-  <div class="spd-bar"><div class="spd-fill" id="spdFill" style="width:0%"></div></div>
-  <div style="display:flex;justify-content:space-between;font-size:.7em;color:var(--gray)"><span>0%</span><span>50%</span><span>100%</span></div>
+  <div class="spd-bar"><div class="spd-fill" id="spdF" style="width:0%;background:var(--purple)"></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:.67em;color:var(--gray)"><span>0%</span><span>50%</span><span>100%</span></div>
   <hr class="sep">
   <h2 style="color:var(--purple)">🔧 RÉGLAGES</h2>
-  <div class="sr"><label>Vitesse minimale (%)</label>
-    <button class="btn btn-gray btn-sm" onclick="cmd({fan_cmd:'min_dec'})">−</button>
-    <div class="vb" id="fMin" style="color:var(--purple)">-- %</div>
-    <button class="btn btn-gray btn-sm" onclick="cmd({fan_cmd:'min_inc'})">+</button>
-    <span style="font-size:.75em;color:var(--gray)">pas 5%</span>
+  <div class="sr"><label>Vitesse min (%)</label>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'min_dec'})">−</button>
+    <div class="vb" id="fMin" style="color:var(--purple)">--%</div>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'min_inc'})">+</button>
   </div>
-  <div class="sr"><label>Vitesse maximale (%)</label>
-    <button class="btn btn-gray btn-sm" onclick="cmd({fan_cmd:'max_dec'})">−</button>
-    <div class="vb" id="fMax" style="color:var(--purple)">-- %</div>
-    <button class="btn btn-gray btn-sm" onclick="cmd({fan_cmd:'max_inc'})">+</button>
-    <span style="font-size:.75em;color:var(--gray)">pas 5%</span>
+  <div class="sr"><label>Vitesse max (%)</label>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'max_dec'})">−</button>
+    <div class="vb" id="fMax" style="color:var(--purple)">--%</div>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'max_inc'})">+</button>
   </div>
-  <div class="info">ℹ️ Seuil CO₂ → onglet Moniteur › Cibles.</div>
-  <hr class="sep">
-  <h2 style="color:var(--purple)">🧪 TEST</h2>
   <div class="btn-row">
-    <button class="btn btn-purple" onclick="cmd({fan_cmd:'test_toggle'},'saveMsgFan','Test lancé')">▶ Test (0→100%)</button>
-    <button class="btn btn-gray btn-sm" onclick="cmd({fan_cmd:'stop'},'saveMsgFan','Arrêté')">⏹ Arrêt forcé</button>
-  </div>
-  <div class="btn-row" style="margin-top:10px">
-    <button class="btn btn-gray" onclick="cmd({fan_cmd:'save'},'saveMsgFan','Sauvegardé')">💾 Sauvegarder</button>
-    <span class="save-msg" id="saveMsgFan"></span>
+    <button class="btn btn-purple" onclick="C({fan_cmd:'test_toggle'},'smFan','Test lancé')">▶ Test 0→100%</button>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'stop'},'smFan','Arrêté')">⏹ Stop</button>
+    <button class="btn btn-gray btn-sm" onclick="C({fan_cmd:'save'},'smFan','Sauvegardé')">💾 Sauver</button>
+    <span class="save-msg" id="smFan"></span>
   </div>
 </div>
 
-<footer>Couveuse ESP32-P4 — Accès distant via HiveMQ MQTT</footer>
+<!-- GRAPHIQUES -->
+<div class="pane" id="pane-gfx">
+  <div class="chart-title" style="color:var(--orange)">🌡 Température (°C) — 1h</div>
+  <canvas id="cT" height="110"></canvas>
+  <div class="chart-title" style="color:var(--blue);margin-top:12px">💧 Humidité (%) — 1h</div>
+  <canvas id="cH" height="110"></canvas>
+  <div class="chart-title" style="color:var(--green);margin-top:12px">🌿 CO₂ (ppm) — 1h</div>
+  <canvas id="cC" height="110"></canvas>
+  <div class="info" style="margin-top:10px">ℹ️ 120 points × 30s = 1h d'historique. Mis à jour à chaque message MQTT (toutes les 5s).</div>
+</div>
+
+<!-- STATISTIQUES -->
+<div class="pane" id="pane-sta">
+  <h2 style="color:var(--yellow)">📊 MIN / MAX</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px">
+    <div class="card"><div class="lbl">T° MIN</div><div class="val" id="stTmin" style="color:var(--cyan)">--</div></div>
+    <div class="card"><div class="lbl">T° MAX</div><div class="val" id="stTmax" style="color:var(--red)">--</div></div>
+    <div class="card"><div class="lbl">HUM MIN</div><div class="val" id="stHmin" style="color:var(--cyan)">--</div></div>
+    <div class="card"><div class="lbl">HUM MAX</div><div class="val" id="stHmax" style="color:var(--red)">--</div></div>
+    <div class="card"><div class="lbl">CO₂ MIN</div><div class="val" id="stCmin" style="color:var(--green)">--</div></div>
+    <div class="card"><div class="lbl">CO₂ MAX</div><div class="val" id="stCmax" style="color:var(--red)">--</div></div>
+  </div>
+  <div class="cnt-row">
+    <div class="cnt"><div class="cv" id="stHeat">--</div><div class="cl">Durée chauffage total</div></div>
+    <div class="cnt"><div class="cv" id="stHumid">--</div><div class="cl">Durée humidificateur total</div></div>
+  </div>
+  <hr class="sep">
+  <h2 style="color:var(--yellow)">🚨 ALARMES</h2>
+  <div id="alarmEmpty" class="info">Aucune alarme enregistrée.</div>
+  <table class="stbl" id="alarmTbl" style="display:none">
+    <thead><tr><th>Type</th><th>Heure</th><th>Valeur</th><th>État</th></tr></thead>
+    <tbody id="alarmBody"></tbody>
+  </table>
+  <hr class="sep">
+  <h2 style="color:var(--red)">🔄 REDÉMARRAGES</h2>
+  <div id="rebootEmpty" class="info">Aucun redémarrage enregistré.</div>
+  <table class="stbl" id="rebootTbl" style="display:none">
+    <thead><tr><th>Cause</th><th>Date</th><th>Heure</th><th>Uptime avant</th></tr></thead>
+    <tbody id="rebootBody"></tbody>
+  </table>
+</div>
+
+<!-- INCUBATION -->
+<div class="pane" id="pane-inc">
+  <div class="grid">
+    <div class="card"><div class="lbl">JOUR</div><div class="val" id="incDay" style="color:var(--pink)">J--</div></div>
+    <div class="card"><div class="lbl">JOURS RESTANTS</div><div class="val" id="incLeft" style="color:var(--orange)">--</div></div>
+    <div class="card"><div class="lbl">DURÉE TOTALE</div><div class="val" id="incTotal" style="color:var(--gray);font-size:1em">-- j</div></div>
+    <div class="card"><div class="lbl">PHASE</div><div class="val" id="incPhase" style="font-size:.82em;color:var(--gray)">--</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:.71em;color:var(--gray);margin:8px 0 2px">
+    <span>Début</span><span id="incPct" style="color:var(--pink)">0%</span><span>Fin</span>
+  </div>
+  <div class="inc-progress"><div class="inc-fill" id="incFill" style="width:0%"></div></div>
+  <div class="cnt-row" style="margin-top:10px">
+    <div class="cnt"><div class="cv" id="incTurns">--</div><div class="cl">Retournements</div></div>
+    <div class="cnt"><div class="cv" id="incInt">--h</div><div class="cl">Intervalle</div></div>
+    <div class="cnt"><div class="cv" id="incHeat">--%</div><div class="cl">Taux chauffe</div></div>
+    <div class="cnt"><div class="cv" id="incHumid">--%</div><div class="cl">Taux humidif</div></div>
+  </div>
+  <hr class="sep">
+  <h2 style="color:var(--pink)">⚙️ RÉGLAGES</h2>
+  <div class="sr" style="gap:6px">
+    <label>Durée totale</label>
+    <input class="num-in" type="number" id="iDur" min="10" max="30" style="border-color:var(--pink)">
+    <span style="color:var(--gray)">jours</span>
+    <label style="min-width:auto;margin-left:10px">Jour éclosion</label>
+    <input class="num-in" type="number" id="iEclos" min="1" max="28" style="border-color:var(--orange)">
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-pink" onclick="saveIncub()">💾 Sauvegarder</button>
+    <span class="save-msg" id="smInc"></span>
+  </div>
+  <div class="info">ℹ️ Jour éclosion = début phase sans retournement (ex: J18 pour 21 jours).</div>
+</div>
+
+<!-- LUMIERES -->
+<div class="pane" id="pane-lum">
+  <h2 style="color:var(--yellow)">💡 LUMIÈRES — Canaux PCA9685</h2>
+  <div class="lum-grid">
+    <div class="lum-card" id="lumCard8" onclick="C({light_cmd:'toggle_ch8'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 1</div>
+      <div class="lum-st" id="lumSt8">Canal 8 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard9" onclick="C({light_cmd:'toggle_ch9'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 2</div>
+      <div class="lum-st" id="lumSt9">Canal 9 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard10" onclick="C({light_cmd:'toggle_ch10'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 3</div>
+      <div class="lum-st" id="lumSt10">Canal 10 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard11" onclick="C({light_cmd:'toggle_ch11'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 4</div>
+      <div class="lum-st" id="lumSt11">Canal 11 — ÉTEINT</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-yellow" onclick="C({light_cmd:'all_on'},'smLum','Toutes allumées')">💡 TOUT ALLUMER</button>
+    <button class="btn btn-gray" onclick="C({light_cmd:'all_off'},'smLum','Toutes éteintes')">🌑 TOUT ÉTEINDRE</button>
+    <span class="save-msg" id="smLum"></span>
+  </div>
+</div>
+
+<footer>Couveuse ESP32-P4 — Accès distant HiveMQ MQTT</footer>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
-// ════════════════════════════════════════════════════════════
-//  CONFIGURATION — modifiez ces 5 valeurs
-// ════════════════════════════════════════════════════════════
-var CFG = {
-  url:   "wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
-  user:  "namir",
-  pass:  "Moad.351969",
-  state: "couveuse/etat",   // topic réception données
-  cmd:   "couveuse/cmd"     // topic envoi commandes
-};
-// ════════════════════════════════════════════════════════════
-
-var client = null;
-var hist   = [];
-var connected = false;
-
-// ── Onglets ─────────────────────────────────────────────────
-function showTab(id, el) {
+var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",user:"namir",pass:"Moad.351969",state:"couveuse/etat",cmd:"couveuse/cmd"};
+var client=null,connected=false,hist=[],motorTestOn=false;
+function G(id){return document.getElementById(id);}
+function pad(n){return String(n).padStart(2,'0');}
+function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+pad(m)+'m';}
+function ST(id,el){
   document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  document.getElementById('pane-'+id).classList.add('active');
-  el.classList.add('active');
+  G('pane-'+id).classList.add('active'); el.classList.add('active');
+  if(id==='gfx')setTimeout(drawCharts,60);
 }
+function setBadge(id,on,a,b){var e=G(id);if(!e)return;e.textContent=on?a:b;e.className='badge '+(on?'on':'off');}
+function setFault(id,ok,a,b){var e=G(id);if(!e)return;e.textContent=ok?a:b;e.className='badge '+(ok?'on':'alarm');}
+function setSw(si,li,on,la,lb){var sw=G(si),l=G(li);if(!sw||!l)return;on?sw.classList.add('on'):sw.classList.remove('on');l.textContent=on?la:lb;l.style.color=on?'var(--green)':'var(--gray)';}
+function flash(id,msg,col){if(!id)return;var e=G(id);if(!e)return;e.textContent=msg;e.style.color=col||'var(--green)';clearTimeout(e._t);e._t=setTimeout(function(){e.textContent='';},3000);}
+function setMqSt(txt,bg,col){var e=G('mqttSt');e.textContent=txt;e.style.background=bg;e.style.color=col;}
+function setLum(ch,on){var c=G('lumCard'+ch),s=G('lumSt'+ch);if(!c||!s)return;on?c.classList.add('on'):c.classList.remove('on');s.textContent='Canal '+ch+' — '+(on?'ALLUMÉ':'ÉTEINT');}
 
-// ── Helpers ──────────────────────────────────────────────────
-function pad(n){return String(n).padStart(2,'0');}
-function setBadge(id,on,a,b){var e=document.getElementById(id);if(!e)return;e.textContent=on?a:b;e.className='badge '+(on?'on':'off');}
-function setFault(id,ok,a,b){var e=document.getElementById(id);if(!e)return;e.textContent=ok?a:b;e.className='badge '+(ok?'on':'alarm');}
-function setSw(swId,lblId,on,lblOn,lblOff){
-  var sw=document.getElementById(swId),lb=document.getElementById(lblId);
-  if(!sw||!lb)return;
-  on?sw.classList.add('on'):sw.classList.remove('on');
-  lb.textContent=on?lblOn:lblOff; lb.style.color=on?'var(--green)':'var(--gray)';
-}
-function flash(id,msg,col){
-  if(!id)return;
-  var e=document.getElementById(id);if(!e)return;
-  e.textContent=msg; e.style.color=col||'var(--green)';
-  setTimeout(function(){e.textContent='';},3000);
-}
-function setMqttStatus(txt, bg, col){
-  var e=document.getElementById('mqttStatus');
-  e.textContent=txt; e.style.background=bg; e.style.color=col;
-}
-
-// ── Application des données reçues ──────────────────────────
-function applyData(d) {
-  // Moniteur
-  document.getElementById('vTemp').textContent = d.temp.toFixed(1)+'°C';
-  document.getElementById('vHum').textContent  = d.hum.toFixed(1)+'%';
-  document.getElementById('vCo2').textContent  = Math.round(d.co2)+' ppm';
-  document.getElementById('tTemp').textContent = d.temp_target.toFixed(1);
-  document.getElementById('tHum').textContent  = Math.round(d.hum_target);
-  document.getElementById('tCo2').textContent  = Math.round(d.co2_alarm);
-  document.getElementById('timeBar').textContent = d.time+' | '+d.date;
-  var te=Math.abs(d.temp-d.temp_target);
-  document.getElementById('vTemp').className='val '+(te<=0.3?'ok':te<=0.6?'warn':'err');
-  var he=Math.abs(d.hum-d.hum_target);
-  document.getElementById('vHum').className='val '+(he<=3?'ok':he<=6?'warn':'err');
-  document.getElementById('vCo2').className='val '+(d.co2<d.co2_alarm?'ok':'err');
-  setBadge('bHeat',  d.heat_on, '🔥 CHAUF: ON','🔥 CHAUF: OFF');
-  setBadge('bHumid', d.humid_on,'💧 HUMIDIF: ON','💧 HUMIDIF: OFF');
-  setFault('bWater', d.water_ok,'💧 EAU: OK','💧 EAU: VIDE!');
-  setFault('bDoor',  d.door_ok, '🚪 PORTE: OK','🚪 PORTE: OUVERTE!');
-  setFault('bSystem',d.system_ok,'✅ SYSTÈME: OK','⛔ SYSTÈME: ARRÊTÉ');
-  document.getElementById('cHeat').textContent  = d.heat_h+'h '+pad(d.heat_m)+'m';
-  document.getElementById('cHumid').textContent = d.humid_h+'h '+pad(d.humid_m)+'m';
-  if(d.turn_count!=null) document.getElementById('cTurns').textContent = d.turn_count;
-  // Champs cibles — ne pas écraser si l'utilisateur est en train de les éditer
+function applyData(d){
+  G('vT').textContent=d.temp.toFixed(1)+'°C'; G('vH').textContent=d.hum.toFixed(1)+'%'; G('vC').textContent=Math.round(d.co2)+' ppm';
+  G('tT').textContent=d.temp_target.toFixed(1); G('tH').textContent=Math.round(d.hum_target); G('tC').textContent=Math.round(d.co2_alarm)+' ppm';
+  G('tb').textContent=d.time+' | '+d.date;
+  var te=Math.abs(d.temp-d.temp_target); G('vT').className='val '+(te<=0.3?'ok':te<=0.6?'warn':'err');
+  var he=Math.abs(d.hum-d.hum_target); G('vH').className='val '+(he<=3?'ok':he<=6?'warn':'err');
+  G('vC').className='val '+(d.co2<d.co2_alarm?'ok':'err');
+  setBadge('bHeat',d.heat_on,'🔥 CHAUF ON','🔥 CHAUF OFF');
+  setBadge('bHumid',d.humid_on,'💧 HUMIDIF ON','💧 HUMIDIF OFF');
+  setFault('bWater',d.water_ok,'💧 EAU OK','💧 EAU VIDE!');
+  setFault('bDoor',d.door_ok,'🚪 PORTE OK','🚪 PORTE OUVERTE!');
+  setFault('bSys',d.system_ok,'✅ SYSTÈME OK','⛔ ARRÊTÉ');
+  G('cHeat').textContent=d.heat_h+'h'+pad(d.heat_m)+'m';
+  G('cHumid').textContent=d.humid_h+'h'+pad(d.humid_m)+'m';
+  if(d.turn_count!=null)G('cTurns').textContent=d.turn_count;
   var ae=document.activeElement;
-  var iT=document.getElementById('iTemp'),iH=document.getElementById('iHum'),iC=document.getElementById('iCo2');
-  if(ae!==iT) iT.value=d.temp_target;
-  if(ae!==iH) iH.value=Math.round(d.hum_target);
-  if(ae!==iC) iC.value=Math.round(d.co2_alarm);
-  hist=d.history; drawChart();
-
-  // Moteur
-  if(d.motor){
-    var m=d.motor;
-    document.getElementById('mPos').textContent    = m.pos;
-    document.getElementById('mDir').textContent    = m.dir||'STOP';
-    document.getElementById('mTurns').textContent  = m.turns;
-    document.getElementById('mInterval').textContent = m.interval_h+'h';
-    document.getElementById('mTravel').textContent = (m.travel_ms/1000).toFixed(1)+' s';
-    document.getElementById('mLeft').textContent   = 'G: '+m.left;
-    document.getElementById('mRight').textContent  = 'D: '+m.right;
-    document.getElementById('mCenter').textContent = m.center;
-    document.getElementById('mPhase').textContent  = m.eclosion?'🐣 ÉCLOSION':'Normal';
-    document.getElementById('mPhase').style.color  = m.eclosion?'var(--orange)':'var(--gray)';
-    var range=m.right-m.left;
-    var pct=range>0?((m.pos-m.left)/range*100):50;
-    document.getElementById('mCursor').style.left=Math.min(Math.max(pct,2),98)+'%';
+  var iT=G('iT'),iH=G('iH'),iC=G('iC');
+  if(ae!==iT)iT.value=d.temp_target; if(ae!==iH)iH.value=Math.round(d.hum_target); if(ae!==iC)iC.value=Math.round(d.co2_alarm);
+  hist=d.history||[];
+  if(G('pane-gfx').classList.contains('active'))drawCharts();
+  if(d.motor){var m=d.motor;
+    G('mPos').textContent=m.pos; G('mDir').textContent=m.dir||'STOP';
+    G('mTurns').textContent=m.turns; G('mInt').textContent=m.interval_h+'h';
+    G('mTrav').textContent=(m.travel_ms/1000).toFixed(1)+'s';
+    G('mL').textContent='G:'+m.left; G('mR').textContent='D:'+m.right; G('mCen').textContent=m.center;
+    G('mPhase').textContent=m.eclosion?'🐣 ÉCLOSION':'Normal'; G('mPhase').style.color=m.eclosion?'var(--orange)':'var(--gray)';
+    var rng=m.right-m.left,pct=rng>0?((m.pos-m.left)/rng*100):50;
+    G('mCur').style.left=Math.min(Math.max(pct,2),98)+'%';
   }
-
-  // Trappe
-  if(d.trappe){
-    var t=d.trappe;
-    var st=document.getElementById('tpState');
-    st.textContent=t.open?'OUVERTE':'FERMÉE';
-    st.style.color=t.open?'var(--green)':'var(--red)';
-    setSw('swAuto','lblAuto',t.auto_on,'AUTO ON','AUTO OFF');
-    setSw('swHor', 'lblHor', t.hor_on, 'HOR. ON','HOR. OFF');
-    setSw('swSync','lblSync',t.sync,   'SYNC ON','SYNC OFF');
-    document.getElementById('tpAutoSt').textContent=t.auto_on?'ACTIF':'OFF';
-    document.getElementById('tpAutoSt').style.color=t.auto_on?'var(--green)':'var(--gray)';
-    document.getElementById('tpTseuil').textContent=t.tseuil.toFixed(1)+'°C';
-    document.getElementById('tpHorSt').textContent =pad(t.dh)+':'+pad(t.dm)+' → '+pad(t.fh)+':'+pad(t.fm);
-    document.getElementById('tpHorSt').style.color =t.hor_on?'var(--cyan)':'var(--gray)';
-    document.getElementById('tpSyncSt').textContent=t.sync?'ON':'OFF';
-    document.getElementById('tpSyncSt').style.color=t.sync?'var(--cyan)':'var(--gray)';
+  if(d.trappe){var t=d.trappe;
+    G('tpSt').textContent=t.open?'OUVERTE':'FERMÉE'; G('tpSt').style.color=t.open?'var(--green)':'var(--red)';
+    setSw('swAuto','lbAuto',t.auto_on,'AUTO ON','AUTO OFF');
+    setSw('swHor','lbHor',t.hor_on,'HOR. ON','HOR. OFF');
+    setSw('swSync','lbSync',t.sync,'SYNC ON','SYNC OFF');
+    G('tpA').textContent=t.auto_on?'ACTIF':'OFF'; G('tpA').style.color=t.auto_on?'var(--green)':'var(--gray)';
+    G('tpTs').textContent=t.tseuil.toFixed(1)+'°C';
+    G('tpHr').textContent=pad(t.dh)+':'+pad(t.dm)+'→'+pad(t.fh)+':'+pad(t.fm);
+    G('tpHr').style.color=t.hor_on?'var(--cyan)':'var(--gray)';
+    G('tpSy').textContent=t.sync?'ON':'OFF'; G('tpSy').style.color=t.sync?'var(--cyan)':'var(--gray)';
     var af=document.activeElement;
-    var dh=document.getElementById('tpDH'),dm=document.getElementById('tpDM');
-    var fh=document.getElementById('tpFH'),fm=document.getElementById('tpFM');
-    if(af!==dh) dh.value=t.dh; if(af!==dm) dm.value=t.dm;
-    if(af!==fh) fh.value=t.fh; if(af!==fm) fm.value=t.fm;
+    var dh=G('tDH'),dm=G('tDM'),fh=G('tFH'),fm=G('tFM');
+    if(af!==dh)dh.value=t.dh; if(af!==dm)dm.value=t.dm; if(af!==fh)fh.value=t.fh; if(af!==fm)fm.value=t.fm;
   }
-
-  // Ventilateur
-  if(d.fan){
-    var f=d.fan;
-    document.getElementById('fSpeed').textContent=f.speed+'%';
-    document.getElementById('fSpeed').style.color=f.speed===0?'var(--gray)':f.speed<50?'var(--orange)':'var(--red)';
-    document.getElementById('fState').textContent=f.running?'💨 EN MARCHE':'⏹ ARRÊTÉ';
-    document.getElementById('fState').style.color=f.running?'var(--green)':'var(--gray)';
-    document.getElementById('fCo2').textContent  =Math.round(d.co2_alarm)+' ppm';
-    document.getElementById('fMin').textContent  =f.speed_min+'%';
-    document.getElementById('fMax').textContent  =f.speed_max+'%';
-    document.getElementById('spdFill').style.width=f.speed+'%';
-    document.getElementById('spdFill').style.background=
-      f.speed===0?'#333':f.speed<50?'var(--orange)':'var(--red)';
+  if(d.fan){var f=d.fan;
+    G('fSpd').textContent=f.speed+'%'; G('fSpd').style.color=f.speed===0?'var(--gray)':f.speed<50?'var(--orange)':'var(--red)';
+    G('fSt').textContent=f.running?'💨 EN MARCHE':'⏹ ARRÊTÉ'; G('fSt').style.color=f.running?'var(--green)':'var(--gray)';
+    G('fCo2').textContent=Math.round(d.co2_alarm)+' ppm';
+    G('fMin').textContent=f.speed_min+'%'; G('fMax').textContent=f.speed_max+'%';
+    G('spdF').style.width=f.speed+'%'; G('spdF').style.background=f.speed===0?'#333':f.speed<50?'var(--orange)':'var(--red)';
   }
-}
-
-// ── Envoi commandes via MQTT ─────────────────────────────────
-function cmd(payload, msgId, msgTxt) {
-  if(!connected || !client) {
-    flash(msgId, '❌ MQTT non connecté', 'var(--red)');
-    return;
+  if(d.lights){setLum(8,d.lights.ch8);setLum(9,d.lights.ch9);setLum(10,d.lights.ch10);setLum(11,d.lights.ch11);}
+  if(d.incub){var ic=d.incub;
+    G('incDay').textContent='J'+ic.day; G('incLeft').textContent=ic.days_left+'j '+ic.hours_left+'h';
+    G('incTotal').textContent=ic.total_days+' j';
+    G('incPhase').textContent=ic.phase_eclos?'🐣 ÉCLOSION':'🥚 Incubation'; G('incPhase').style.color=ic.phase_eclos?'var(--orange)':'var(--pink)';
+    G('incTurns').textContent=ic.turns; G('incInt').textContent=ic.interval_h+'h';
+    G('incHeat').textContent=ic.heat_pct+'%'; G('incHumid').textContent=ic.humid_pct+'%';
+    var pct2=ic.total_days>0?Math.min(100,((ic.day-1)/ic.total_days*100)):0;
+    G('incFill').style.width=pct2.toFixed(1)+'%'; G('incPct').textContent=pct2.toFixed(0)+'%';
+    var af2=document.activeElement;
+    if(af2!==G('iDur'))G('iDur').value=ic.total_days; if(af2!==G('iEclos'))G('iEclos').value=ic.eclos_day;
   }
-  var body = JSON.stringify(payload);
-  console.log('[MQTT→cmd]', body);
-  client.publish(CFG.cmd, body, {qos:1}, function(err) {
-    if(err) { flash(msgId, '❌ Erreur publish', 'var(--red)'); }
-    else     { flash(msgId, '✅ '+(msgTxt||'Envoyé')); }
-  });
-}
-function sendTargets(){
-  cmd({
-    temp:parseFloat(document.getElementById('iTemp').value),
-    hum: parseFloat(document.getElementById('iHum').value),
-    co2: parseFloat(document.getElementById('iCo2').value)
-  },'saveMsgMon','Cibles mises à jour');
-}
-function saveTrappeHoraires(){
-  cmd({
-    trappe_cmd:'save',
-    trappe_dh:parseInt(document.getElementById('tpDH').value)||0,
-    trappe_dm:parseInt(document.getElementById('tpDM').value)||0,
-    trappe_fh:parseInt(document.getElementById('tpFH').value)||0,
-    trappe_fm:parseInt(document.getElementById('tpFM').value)||0
-  },'saveMsgTra','Horaires sauvegardés');
-}
-
-// ── Graphique historique ─────────────────────────────────────
-function drawChart(){
-  var c=document.getElementById('histChart'),ctx=c.getContext('2d');
-  c.width=c.offsetWidth;c.height=140;
-  var w=c.width,h=c.height,n=hist.length;
-  if(n<2)return;ctx.clearRect(0,0,w,h);
-  var tMin=35,tMax=40;ctx.strokeStyle='#f39c12';ctx.lineWidth=2;ctx.beginPath();
-  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(hist[i].t-tMin)/(tMax-tMin)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
-  var hMin=40,hMax=80;ctx.strokeStyle='#4a90d9';ctx.lineWidth=2;ctx.beginPath();
-  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(hist[i].h-hMin)/(hMax-hMin)*h;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
-  ctx.font='11px Arial';ctx.fillStyle='#f39c12';ctx.fillText('— Temp',8,14);
-  ctx.fillStyle='#4a90d9';ctx.fillText('— Hum',80,14);
-}
-window.addEventListener('resize',drawChart);
-
-// ── Connexion MQTT ───────────────────────────────────────────
-function connect() {
-  setMqttStatus('🟡 Connexion...','#2a2000','var(--orange)');
-  client = mqtt.connect(CFG.url, {
-    username:        CFG.user,
-    password:        CFG.pass,
-    clientId:        'remote_' + Math.random().toString(16).slice(2),
-    reconnectPeriod: 5000,
-    connectTimeout:  10000,
-    clean:           true
-  });
-
-  client.on('connect', function() {
-    connected = true;
-    setMqttStatus('🟢 MQTT connecté','#1a3a1a','var(--green)');
-    client.subscribe(CFG.state, {qos:1}, function(err) {
-      if(err) console.error('[MQTT] subscribe error:', err);
-      else    console.log('[MQTT] subscribed to', CFG.state);
-    });
-  });
-
-  client.on('message', function(topic, payload) {
-    if(topic !== CFG.state) return;
-    try {
-      var d = JSON.parse(payload.toString());
-      applyData(d);
-    } catch(e) {
-      console.error('[MQTT] parse error:', e, payload.toString().slice(0,100));
+  if(d.stats){var s=d.stats;
+    if(s.ok){G('stTmin').textContent=s.tmin.toFixed(1)+'°C';G('stTmax').textContent=s.tmax.toFixed(1)+'°C';G('stHmin').textContent=s.hmin.toFixed(1)+'%';G('stHmax').textContent=s.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(s.co2min)+' ppm';G('stCmax').textContent=Math.round(s.co2max)+' ppm';}
+    if(s.heat_time)G('stHeat').textContent=s.heat_time; if(s.humid_time)G('stHumid').textContent=s.humid_time;
+  }
+  if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
+    if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
+    else{G('alarmEmpty').style.display='none';G('alarmTbl').style.display='';
+      d.alarms.forEach(function(a){var tr=document.createElement('tr');var col=a.on?'var(--red)':'var(--gray)';
+        tr.innerHTML='<td style="color:'+col+'">'+a.type+'</td><td>'+a.time+'</td><td>'+a.val.toFixed(1)+'</td><td><span class="badge '+(a.on?'alarm':'off')+'">'+(a.on?'ACTIF':'RÉSOLU')+'</span></td>';
+        tb.appendChild(tr);});
     }
-  });
-
-  client.on('disconnect', function() {
-    connected = false;
-    setMqttStatus('🔴 Déconnecté','#3a1a1a','var(--red)');
-  });
-
-  client.on('reconnect', function() {
-    connected = false;
-    setMqttStatus('🟡 Reconnexion...','#2a2000','var(--orange)');
-  });
-
-  client.on('error', function(err) {
-    connected = false;
-    console.error('[MQTT] error:', err);
-    setMqttStatus('🔴 Erreur MQTT','#3a1a1a','var(--red)');
-  });
-
-  client.on('close', function() {
-    connected = false;
-    setMqttStatus('🔴 Fermé','#3a1a1a','var(--red)');
-  });
+  }
+  if(d.reboots!==undefined){var rb=G('rebootBody');rb.innerHTML='';
+    if(d.reboots.length===0){G('rebootEmpty').style.display='';G('rebootTbl').style.display='none';}
+    else{G('rebootEmpty').style.display='none';G('rebootTbl').style.display='';
+      d.reboots.forEach(function(r){var tr=document.createElement('tr');
+        var cc=r.cause.indexOf('WDT')>=0||r.cause.indexOf('PANIC')>=0?'var(--red)':r.cause.indexOf('POWER')>=0?'var(--orange)':'var(--gray)';
+        tr.innerHTML='<td style="color:'+cc+';font-weight:bold">'+r.cause+'</td><td>'+r.date+'</td><td>'+r.time+'</td><td>'+fmtUp(r.up)+'</td>';
+        rb.appendChild(tr);});
+    }
+  }
 }
 
+function drawOneChart(id,data,yMin,yMax,color,unit){
+  var c=G(id);if(!c)return;var ctx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=parseInt(c.getAttribute('height'))||110;
+  var w=c.width,h=c.height,n=data.length;ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='#222244';ctx.lineWidth=1;
+  for(var i=0;i<=4;i++){var y2=h/4*i;ctx.beginPath();ctx.moveTo(0,y2);ctx.lineTo(w,y2);ctx.stroke();}
+  if(n<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(data[i]-yMin)/(yMax-yMin)*(h-12)-6;y=Math.max(2,Math.min(h-2,y));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+  var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),last=data[data.length-1];
+  ctx.font='10px Arial';ctx.fillStyle='#555577';ctx.fillText(mn.toFixed(1)+unit,4,h-3);ctx.fillText(mx.toFixed(1)+unit,4,12);
+  ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.fillText(last.toFixed(1)+unit,w-50,13);
+}
+function drawCharts(){
+  if(!hist||hist.length<2)return;
+  drawOneChart('cT',hist.map(function(p){return p.t;}),34,42,'#f39c12','°C');
+  drawOneChart('cH',hist.map(function(p){return p.h;}),30,90,'#4a90d9','%');
+  drawOneChart('cC',hist.map(function(p){return p.co2;}),300,3000,'#27ae60','ppm');
+}
+window.addEventListener('resize',function(){if(G('pane-gfx').classList.contains('active'))drawCharts();});
+
+function C(payload,msgId,msgTxt){
+  if(!connected||!client){flash(msgId,'❌ MQTT déconnecté','var(--red)');return;}
+  var body=JSON.stringify(payload);
+  console.log('[→MQTT]',body);
+  client.publish(CFG.cmd,body,{qos:1},function(err){
+    if(err)flash(msgId,'❌ Erreur publish','var(--red)');
+    else flash(msgId,'✅ '+(msgTxt||'Envoyé'));
+  });
+}
+function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
+function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
+function saveIncub(){C({incub_cmd:'save',duree:+G('iDur').value||21,eclos_day:+G('iEclos').value||18},'smInc','Sauvegardé');}
+function toggleMotTest(){
+  motorTestOn=!motorTestOn;
+  G('btnMT').textContent=motorTestOn?'⏹ Arrêter le test':'▶ Lancer test G→D→Centre';
+  G('btnMT').className='btn btn-sm '+(motorTestOn?'btn-red':'btn-yellow');
+  C({motor_cmd:motorTestOn?'test_start':'test_stop'},'smMot',motorTestOn?'Test lancé':'Test arrêté');
+}
+
+function connect(){
+  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
+  client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
+  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
+  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
+  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
+  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
+  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
+  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
+}
 connect();
 </script>
 </body>
