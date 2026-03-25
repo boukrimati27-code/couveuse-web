@@ -320,8 +320,20 @@ function applyData(d){
   hist=d.history||[];
   if(G('pane-gfx').classList.contains('active'))drawCharts();
   if(d.lights){var l=d.lights;
-    if(s.ok){G('stTmin').textContent=s.tmin.toFixed(1)+'°C';G('stTmax').textContent=s.tmax.toFixed(1)+'°C';G('stHmin').textContent=s.hmin.toFixed(1)+'%';G('stHmax').textContent=s.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(s.co2min)+' ppm';G('stCmax').textContent=Math.round(s.co2max)+' ppm';}
-    if(s.heat_time)G('stHeat').textContent=s.heat_time; if(s.humid_time)G('stHumid').textContent=s.humid_time;
+    // Mise à jour des états des lumières
+    G('lumSt8').textContent='Canal 8 — '+(l.ch8?'ALLUMÉ':'ÉTEINT');
+    G('lumSt9').textContent='Canal 9 — '+(l.ch9?'ALLUMÉ':'ÉTEINT');
+    G('lumSt10').textContent='Canal 10 — '+(l.ch10?'ALLUMÉ':'ÉTEINT');
+    G('lumSt11').textContent='Canal 11 — '+(l.ch11?'ALLUMÉ':'ÉTEINT');
+    
+    // Mise à jour des couleurs des cartes
+    G('lumCard8').style.background=l.ch8?'var(--yellow)':'var(--card)';
+    G('lumCard9').style.background=l.ch9?'var(--yellow)':'var(--card)';
+    G('lumCard10').style.background=l.ch10?'var(--yellow)':'var(--card)';
+    G('lumCard11').style.background=l.ch11?'var(--yellow)':'var(--card)';
+    
+    if(d.stats.ok){G('stTmin').textContent=d.stats.tmin.toFixed(1)+'°C';G('stTmax').textContent=d.stats.tmax.toFixed(1)+'°C';G('stHmin').textContent=d.stats.hmin.toFixed(1)+'%';G('stHmax').textContent=d.stats.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(d.stats.co2min)+' ppm';G('stCmax').textContent=Math.round(d.stats.co2max)+' ppm';}
+    if(d.stats.heat_time)G('stHeat').textContent=d.stats.heat_time; if(d.stats.humid_time)G('stHumid').textContent=d.stats.humid_time;
   }
   if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
     if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
