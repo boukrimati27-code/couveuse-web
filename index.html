@@ -1,58 +1,401 @@
-🥚
-COUVEUSE INTELLIGENTE
-Accès sécurisé — saisissez votre code PIN
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Couveuse — Accès distant</title>
+<style>
+:root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888;--purple:#9b59b6;--cyan:#00bcd4;--yellow:#f1c40f;--pink:#e91e8c}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;font-size:14px}
+.hdr{background:#111128;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222244;flex-wrap:wrap;gap:6px}
+.hdr h1{color:var(--blue);font-size:1.15em}
+.hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#mqttSt{font-size:.72em;padding:3px 10px;border-radius:10px;background:#222;color:var(--gray);transition:all .3s}
+.timebar{color:var(--gray);font-size:.75em}
+.tabs{display:flex;background:#0a0a18;border-bottom:2px solid #222244;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 15px;cursor:pointer;font-size:.82em;font-weight:bold;color:var(--gray);border-bottom:3px solid transparent;white-space:nowrap;user-select:none}
+.tab:hover{color:#fff;background:#111128}
+.tab.active{color:#fff}
+.t-mon.active{border-bottom-color:var(--blue)}.t-mot.active{border-bottom-color:var(--orange)}
+.t-tra.active{border-bottom-color:var(--cyan)}.t-fan.active{border-bottom-color:var(--purple)}
+.t-gfx.active{border-bottom-color:var(--green)}.t-sta.active{border-bottom-color:var(--yellow)}
+.t-inc.active{border-bottom-color:var(--pink)}.t-lum.active{border-bottom-color:#fff}
+.pane{display:none;padding:11px 13px}.pane.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+.card{background:var(--card);border:1px solid #2a2a3a;border-radius:10px;padding:12px;text-align:center}
+.card .val{font-size:1.8em;font-weight:bold;margin:5px 0}
+.card .lbl{font-size:.7em;color:var(--gray)}.card .sub{font-size:.74em;color:var(--gray);margin-top:3px}
+.ok{color:var(--green)}.warn{color:var(--orange)}.err{color:var(--red)}
+.status-bar{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}
+.badge{padding:4px 10px;border-radius:20px;font-size:.74em;font-weight:bold}
+.badge.on{background:#1a3a1a;color:var(--green);border:1px solid var(--green)}
+.badge.off{background:#1a1a1a;color:var(--gray);border:1px solid #333}
+.badge.alarm{background:#3a1a1a;color:var(--red);border:1px solid var(--red)}
+h2{margin:12px 0 6px;font-size:.9em}
+.sep{border:none;border-top:1px solid #222244;margin:12px 0}
+.ti{display:flex;flex-direction:column;gap:3px}
+.ti label{font-size:.7em;color:var(--gray)}
+.ti input{background:#111;color:#fff;border:1px solid var(--blue);border-radius:6px;padding:4px 8px;width:110px;font-size:.85em}
+.targets{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0}
+.info{background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:8px 12px;margin:7px 0;font-size:.78em;color:#aaa;line-height:1.55}
+.info.warn{background:#1a1000;border-color:#3a2200}
+.btn{border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.84em;font-weight:bold;transition:opacity .15s}
+.btn:hover{opacity:.8}
+.btn-blue{background:var(--blue);color:#fff}.btn-green{background:var(--green);color:#fff}
+.btn-orange{background:var(--orange);color:#fff}.btn-red{background:var(--red);color:#fff}
+.btn-gray{background:#2a2a3a;color:#bbb}.btn-cyan{background:var(--cyan);color:#000}
+.btn-purple{background:var(--purple);color:#fff}.btn-yellow{background:var(--yellow);color:#000}
+.btn-pink{background:var(--pink);color:#fff}
+.btn-sm{padding:4px 10px;font-size:.78em;border-radius:6px}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0;align-items:center}
+.save-msg{font-size:.77em;color:var(--green);margin-left:7px}
+.cnt-row{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0}
+.cnt{background:var(--card);border:1px solid #2a2a3a;border-radius:8px;padding:8px 13px;flex:1;min-width:120px}
+.cnt .cv{font-size:1.15em;font-weight:bold;color:var(--orange)}.cnt .cl{font-size:.68em;color:var(--gray);margin-top:2px}
+canvas{width:100%!important;background:var(--card);border-radius:8px;border:1px solid #2a2a3a;display:block}
+.mbar{background:#111;border:1px solid #2a2a3a;border-radius:6px;height:18px;position:relative;margin:5px 0;overflow:hidden}
+.mbar-cur{position:absolute;top:1px;width:8px;height:16px;background:var(--orange);border-radius:3px;transform:translateX(-50%);transition:left .4s}
+.mbar-mid{position:absolute;top:0;left:50%;width:2px;height:100%;background:#444;transform:translateX(-50%)}
+.sr{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
+.sr label{min-width:180px;font-size:.8em;color:var(--gray)}
+.vb{background:#111;border:1px solid #2a2a3a;border-radius:6px;padding:4px 10px;min-width:72px;text-align:center;font-weight:bold}
+.sw-row{display:flex;align-items:center;gap:8px}
+.sw{width:44px;height:23px;background:#333;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.sw.on{background:var(--green)}.sw::after{content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;background:#fff;border-radius:50%;transition:left .2s}
+.sw.on::after{left:23px}
+.spd-bar{background:#1a1a2e;border-radius:4px;height:13px;margin:4px 0;overflow:hidden;border:1px solid #2a2a3a}
+.spd-fill{height:100%;border-radius:4px;transition:width .5s}
+.lum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
+.lum-card{background:var(--card);border:2px solid #2a2a3a;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
+.lum-card:hover{opacity:.85}
+.lum-card.on{border-color:var(--yellow);background:#1a1a00;box-shadow:0 0 18px rgba(241,196,15,.2)}
+.lum-icon{font-size:2em;margin-bottom:6px}
+.lum-name{font-size:.85em;font-weight:bold;color:#ccc}
+.lum-st{font-size:.72em;color:var(--gray);margin-top:3px}
+.lum-card.on .lum-st{color:var(--yellow)}
+.chart-title{font-size:.79em;color:var(--gray);margin:10px 0 3px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase}
+.stbl{width:100%;border-collapse:collapse;margin:7px 0;font-size:.81em}
+.stbl th{background:#111128;color:var(--gray);padding:6px 9px;text-align:left;border-bottom:1px solid #222244}
+.stbl td{padding:6px 9px;border-bottom:1px solid #1a1a2e}
+.stbl tr:hover td{background:#111128}
+.inc-progress{background:#111;border-radius:8px;height:14px;overflow:hidden;margin:8px 0;border:1px solid #2a2a3a}
+.inc-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--orange),var(--red));transition:width .5s}
+.num-in{background:#111;color:#fff;border:1px solid;border-radius:6px;padding:4px;width:58px;text-align:center;font-size:.88em}
+footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
+</style>
+</head>
+<body>
+
+<!-- ===== ÉCRAN PIN ===== -->
+<div id="pinScreen" style="
+  position:fixed;inset:0;background:#0d0d1a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;gap:18px;">
+  <div style="font-size:2em">🥚</div>
+  <div style="color:#4a90d9;font-size:1.3em;font-weight:bold">COUVEUSE INTELLIGENTE</div>
+  <div style="color:#888;font-size:.9em">Accès sécurisé — saisissez votre code PIN</div>
+  <div style="display:flex;gap:10px;margin:8px 0" id="pinDots">
+    <div class="pd"></div><div class="pd"></div>
+    <div class="pd"></div><div class="pd"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,72px);gap:10px">
+    <button class="pb" onclick="pinPress(1)">1</button>
+    <button class="pb" onclick="pinPress(2)">2</button>
+    <button class="pb" onclick="pinPress(3)">3</button>
+    <button class="pb" onclick="pinPress(4)">4</button>
+    <button class="pb" onclick="pinPress(5)">5</button>
+    <button class="pb" onclick="pinPress(6)">6</button>
+    <button class="pb" onclick="pinPress(7)">7</button>
+    <button class="pb" onclick="pinPress(8)">8</button>
+    <button class="pb" onclick="pinPress(9)">9</button>
+    <button class="pb pb-clr" onclick="pinClear()" style="grid-column:1">✕</button>
+    <button class="pb" onclick="pinPress(0)">0</button>
+    <button class="pb pb-ok" onclick="pinOk()" style="grid-column:3">✓</button>
+  </div>
+  <div id="pinErr" style="color:#e74c3c;font-size:.85em;min-height:1.2em"></div>
+</div>
+<style>
+.pd{width:14px;height:14px;border-radius:50%;background:#222244;border:2px solid #4a90d9;transition:background .2s}
+.pd.filled{background:#4a90d9}
+.pb{width:72px;height:72px;border-radius:12px;background:#1a1a2e;border:2px solid #2a2a4e;
+    color:#fff;font-size:1.4em;cursor:pointer;transition:background .15s}
+.pb:active,.pb:hover{background:#2a2a5e}
+.pb-clr{border-color:#e74c3c;color:#e74c3c}
+.pb-ok{border-color:#27ae60;color:#27ae60}
+</style>
+<script>
+var pinVal='';
+var PIN_HASH=38728; // PIN: 0305 — modifiez selon votre PIN
+function simpleHash(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xFFFF;return h;}
+function pinPress(n){
+  if(pinVal.length>=4)return;
+  pinVal+=n;
+  document.querySelectorAll('.pd').forEach(function(d,i){
+    d.classList.toggle('filled',i<pinVal.length);
+  });
+}
+function pinClear(){
+  pinVal='';
+  document.querySelectorAll('.pd').forEach(function(d){d.classList.remove('filled');});
+  G('pinErr').textContent='';
+}
+function pinOk(){
+  if(pinVal.length<4){G('pinErr').textContent='Saisissez 4 chiffres';return;}
+  if(simpleHash(pinVal)===PIN_HASH){
+    // PIN correct — injecter les credentials et démarrer
+    CFG.user=_d(_u); CFG.pass=_d(_p);
+    G('pinScreen').style.display='none';
+    startApp();
+  } else {
+    G('pinErr').textContent='Code incorrect — réessayez';
+    pinClear();
+  }
+}
+</script>
+
+<div class="hdr">
+  <h1>🥚 Couveuse ESP32-P4</h1>
+  <div class="hright">
+    <span id="mqttSt">⚫ Connexion...</span>
+    <span class="timebar" id="tb">--:-- | --/--/----</span>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab t-mon active" onclick="ST('mon',this)">📊 Moniteur</div>
+  <div class="tab t-gfx" onclick="ST('gfx',this)">📈 Graphiques</div>
+  <div class="tab t-sta" onclick="ST('sta',this)">📋 Statistiques</div>
+  <div class="tab t-lum" onclick="ST('lum',this)">💡 Lumières</div>
+</div>
+
+<!-- MONITEUR -->
+<div class="pane active" id="pane-mon">
+  <div class="grid">
+    <div class="card"><div class="lbl">TEMPÉRATURE</div><div class="val ok" id="vT">--°C</div><div class="sub">Cible: <span id="tT">--</span>°C</div></div>
+    <div class="card"><div class="lbl">HUMIDITÉ</div><div class="val ok" id="vH">--%</div><div class="sub">Cible: <span id="tH">--</span>%</div></div>
+    <div class="card"><div class="lbl">CO₂</div><div class="val" id="vC">-- ppm</div><div class="sub">Alarme: <span id="tC">--</span></div></div>
+  </div>
+  <h2 style="color:var(--blue)">⚡ ÉTAT</h2>
+  <div class="status-bar">
+    <span class="badge off" id="bHeat">🔥 CHAUF</span><span class="badge off" id="bHumid">💧 HUMIDIF</span>
+    <span class="badge on" id="bWater">💧 EAU</span><span class="badge on" id="bDoor">🚪 PORTE</span>
+    <span class="badge on" id="bSys">✅ SYSTÈME</span>
+  </div>
+  <div class="cnt-row">
+    <div class="cnt"><div class="cv" id="cHeat">--</div><div class="cl">Durée chauffage</div></div>
+    <div class="cnt"><div class="cv" id="cHumid">--</div><div class="cl">Durée humidificateur</div></div>
+    <div class="cnt"><div class="cv" id="cTurns">--</div><div class="cl">Retournements</div></div>
+  </div>
+  <h2 style="color:var(--blue)">⚙️ CIBLES</h2>
+  <div class="targets">
+    <div class="ti"><label>Temp (°C)</label><input type="number" id="iT" step="0.1" min="35" max="40"></div>
+    <div class="ti"><label>Hum (%)</label><input type="number" id="iH" step="1" min="30" max="80"></div>
+    <div class="ti"><label>CO2 alarme</label><input type="number" id="iC" step="100" min="1000" max="5000"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="sendTargets()">✅ Appliquer</button>
+    <span class="save-msg" id="smMon"></span>
+  </div>
+</div>
 
 
 
 
-1
-2
-3
-4
-5
-6
-7
-8
-9
-✕
-0
-✓
+<!-- GRAPHIQUES -->
+<div class="pane" id="pane-gfx">
+  <div class="chart-title" style="color:var(--orange)">🌡 Température (°C) — 1h</div>
+  <canvas id="cT" height="110"></canvas>
+  <div class="chart-title" style="color:var(--blue);margin-top:12px">💧 Humidité (%) — 1h</div>
+  <canvas id="cH" height="110"></canvas>
+  <div class="chart-title" style="color:var(--green);margin-top:12px">🌿 CO₂ (ppm) — 1h</div>
+  <canvas id="cC" height="110"></canvas>
+  <div class="info" style="margin-top:10px">ℹ️ 120 points × 30s = 1h d'historique. Mis à jour à chaque message MQTT (toutes les 5s).</div>
+</div>
 
-🥚 Couveuse ESP32-P4
-⚫ Connexion...
---:-- | --/--/----
-📊 Moniteur
-📈 Graphiques
-📋 Statistiques
-💡 Lumières
-TEMPÉRATURE
---°C
-Cible: --°C
-HUMIDITÉ
---%
-Cible: --%
-CO₂
--- ppm
-Alarme: --
-⚡ ÉTAT
-🔥 CHAUF
-💧 HUMIDIF
-💧 EAU
-🚪 PORTE
-✅ SYSTÈME
---
-Durée chauffage
---
-Durée humidificateur
---
-Retournements
-⚙️ CIBLES
-Temp (°C)
+<!-- STATISTIQUES -->
+<div class="pane" id="pane-sta">
+  <h2 style="color:var(--yellow)">📊 MIN / MAX</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px">
+    <div class="card"><div class="lbl">T° MIN</div><div class="val" id="stTmin" style="color:var(--cyan)">--</div></div>
+    <div class="card"><div class="lbl">T° MAX</div><div class="val" id="stTmax" style="color:var(--red)">--</div></div>
+    <div class="card"><div class="lbl">HUM MIN</div><div class="val" id="stHmin" style="color:var(--cyan)">--</div></div>
+    <div class="card"><div class="lbl">HUM MAX</div><div class="val" id="stHmax" style="color:var(--red)">--</div></div>
+    <div class="card"><div class="lbl">CO₂ MIN</div><div class="val" id="stCmin" style="color:var(--green)">--</div></div>
+    <div class="card"><div class="lbl">CO₂ MAX</div><div class="val" id="stCmax" style="color:var(--red)">--</div></div>
+  </div>
+  <div class="cnt-row">
+    <div class="cnt"><div class="cv" id="stHeat">--</div><div class="cl">Durée chauffage total</div></div>
+    <div class="cnt"><div class="cv" id="stHumid">--</div><div class="cl">Durée humidificateur total</div></div>
+  </div>
+  <hr class="sep">
+  <h2 style="color:var(--yellow)">🚨 ALARMES</h2>
+  <div id="alarmEmpty" class="info">Aucune alarme enregistrée.</div>
+  <table class="stbl" id="alarmTbl" style="display:none">
+    <thead><tr><th>Type</th><th>Heure</th><th>Valeur</th><th>État</th></tr></thead>
+    <tbody id="alarmBody"></tbody>
+  </table>
+  <hr class="sep">
+  <h2 style="color:var(--red)">🔄 REDÉMARRAGES</h2>
+  <div id="rebootEmpty" class="info">Aucun redémarrage enregistré.</div>
+  <table class="stbl" id="rebootTbl" style="display:none">
+    <thead><tr><th>Cause</th><th>Date</th><th>Heure</th><th>Uptime avant</th></tr></thead>
+    <tbody id="rebootBody"></tbody>
+  </table>
+</div>
 
-Hum (%)
 
-CO2 alarme
+<!-- LUMIERES -->
+<div class="pane" id="pane-lum">
+  <h2 style="color:var(--yellow)">💡 LUMIÈRES — Canaux PCA9685</h2>
+  <div class="lum-grid">
+    <div class="lum-card" id="lumCard8" onclick="C({light_cmd:'toggle_ch8'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 1</div>
+      <div class="lum-st" id="lumSt8">Canal 8 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard9" onclick="C({light_cmd:'toggle_ch9'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 2</div>
+      <div class="lum-st" id="lumSt9">Canal 9 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard10" onclick="C({light_cmd:'toggle_ch10'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 3</div>
+      <div class="lum-st" id="lumSt10">Canal 10 — ÉTEINT</div>
+    </div>
+    <div class="lum-card" id="lumCard11" onclick="C({light_cmd:'toggle_ch11'},'smLum')">
+      <div class="lum-icon">💡</div><div class="lum-name">Lumière 4</div>
+      <div class="lum-st" id="lumSt11">Canal 11 — ÉTEINT</div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-yellow" onclick="C({light_cmd:'all_on'},'smLum','Toutes allumées')">💡 TOUT ALLUMER</button>
+    <button class="btn btn-gray" onclick="C({light_cmd:'all_off'},'smLum','Toutes éteintes')">🌑 TOUT ÉTEINDRE</button>
+    <span class="save-msg" id="smLum"></span>
+  </div>
+</div>
 
-✅ Appliquer
+<footer>Couveuse ESP32-P4 — Accès distant HiveMQ MQTT</footer>
 
-Couveuse ESP32-P4 — Accès distant HiveMQ MQTT
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+// Credentials encodés — décodage à l'exécution après saisie du PIN
+var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk=";
+function _d(s){return atob(s);}
+var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
+  user:null,pass:null,state:"couveuse/etat",cmd:"couveuse/cmd"};
+var client=null,connected=false,hist=[],motorTestOn=false;
+function G(id){return document.getElementById(id);}
+function pad(n){return String(n).padStart(2,'0');}
+function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+pad(m)+'m';}
+function ST(id,el){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  G('pane-'+id).classList.add('active'); el.classList.add('active');
+  if(id==='gfx')setTimeout(drawCharts,60);
+}
+function setBadge(id,on,a,b){var e=G(id);if(!e)return;e.textContent=on?a:b;e.className='badge '+(on?'on':'off');}
+function setFault(id,ok,a,b){var e=G(id);if(!e)return;e.textContent=ok?a:b;e.className='badge '+(ok?'on':'alarm');}
+function setSw(si,li,on,la,lb){var sw=G(si),l=G(li);if(!sw||!l)return;on?sw.classList.add('on'):sw.classList.remove('on');l.textContent=on?la:lb;l.style.color=on?'var(--green)':'var(--gray)';}
+function flash(id,msg,col){if(!id)return;var e=G(id);if(!e)return;e.textContent=msg;e.style.color=col||'var(--green)';clearTimeout(e._t);e._t=setTimeout(function(){e.textContent='';},3000);}
+function setMqSt(txt,bg,col){var e=G('mqttSt');e.textContent=txt;e.style.background=bg;e.style.color=col;}
+function setLum(ch,on){var c=G('lumCard'+ch),s=G('lumSt'+ch);if(!c||!s)return;on?c.classList.add('on'):c.classList.remove('on');s.textContent='Canal '+ch+' — '+(on?'ALLUMÉ':'ÉTEINT');}
+
+function applyData(d){
+  G('vT').textContent=d.temp.toFixed(1)+'°C'; G('vH').textContent=d.hum.toFixed(1)+'%'; G('vC').textContent=Math.round(d.co2)+' ppm';
+  G('tT').textContent=d.temp_target.toFixed(1); G('tH').textContent=Math.round(d.hum_target); G('tC').textContent=Math.round(d.co2_alarm)+' ppm';
+  G('tb').textContent=d.time+' | '+d.date;
+  var te=Math.abs(d.temp-d.temp_target); G('vT').className='val '+(te<=0.3?'ok':te<=0.6?'warn':'err');
+  var he=Math.abs(d.hum-d.hum_target); G('vH').className='val '+(he<=3?'ok':he<=6?'warn':'err');
+  G('vC').className='val '+(d.co2<d.co2_alarm?'ok':'err');
+  setBadge('bHeat',d.heat_on,'🔥 CHAUF ON','🔥 CHAUF OFF');
+  setBadge('bHumid',d.humid_on,'💧 HUMIDIF ON','💧 HUMIDIF OFF');
+  setFault('bWater',d.water_ok,'💧 EAU OK','💧 EAU VIDE!');
+  setFault('bDoor',d.door_ok,'🚪 PORTE OK','🚪 PORTE OUVERTE!');
+  setFault('bSys',d.system_ok,'✅ SYSTÈME OK','⛔ ARRÊTÉ');
+  G('cHeat').textContent=d.heat_h+'h'+pad(d.heat_m)+'m';
+  G('cHumid').textContent=d.humid_h+'h'+pad(d.humid_m)+'m';
+  if(d.turn_count!=null)G('cTurns').textContent=d.turn_count;
+  var ae=document.activeElement;
+  var iT=G('iT'),iH=G('iH'),iC=G('iC');
+  if(ae!==iT)iT.value=d.temp_target; if(ae!==iH)iH.value=Math.round(d.hum_target); if(ae!==iC)iC.value=Math.round(d.co2_alarm);
+  hist=d.history||[];
+  if(G('pane-gfx').classList.contains('active'))drawCharts();
+  if(d.lights){var l=d.lights;
+    if(s.ok){G('stTmin').textContent=s.tmin.toFixed(1)+'°C';G('stTmax').textContent=s.tmax.toFixed(1)+'°C';G('stHmin').textContent=s.hmin.toFixed(1)+'%';G('stHmax').textContent=s.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(s.co2min)+' ppm';G('stCmax').textContent=Math.round(s.co2max)+' ppm';}
+    if(s.heat_time)G('stHeat').textContent=s.heat_time; if(s.humid_time)G('stHumid').textContent=s.humid_time;
+  }
+  if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
+    if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
+    else{G('alarmEmpty').style.display='none';G('alarmTbl').style.display='';
+      d.alarms.forEach(function(a){var tr=document.createElement('tr');var col=a.on?'var(--red)':'var(--gray)';
+        tr.innerHTML='<td style="color:'+col+'">'+a.type+'</td><td>'+a.time+'</td><td>'+a.val.toFixed(1)+'</td><td><span class="badge '+(a.on?'alarm':'off')+'">'+(a.on?'ACTIF':'RÉSOLU')+'</span></td>';
+        tb.appendChild(tr);});
+    }
+  }
+  if(d.reboots!==undefined){var rb=G('rebootBody');rb.innerHTML='';
+    if(d.reboots.length===0){G('rebootEmpty').style.display='';G('rebootTbl').style.display='none';}
+    else{G('rebootEmpty').style.display='none';G('rebootTbl').style.display='';
+      d.reboots.forEach(function(r){var tr=document.createElement('tr');
+        var cc=r.cause.indexOf('WDT')>=0||r.cause.indexOf('PANIC')>=0?'var(--red)':r.cause.indexOf('POWER')>=0?'var(--orange)':'var(--gray)';
+        tr.innerHTML='<td style="color:'+cc+';font-weight:bold">'+r.cause+'</td><td>'+r.date+'</td><td>'+r.time+'</td><td>'+fmtUp(r.up)+'</td>';
+        rb.appendChild(tr);});
+    }
+  }
+}
+
+function drawOneChart(id,data,yMin,yMax,color,unit){
+  var c=G(id);if(!c)return;var ctx=c.getContext('2d');
+  c.width=c.offsetWidth;c.height=parseInt(c.getAttribute('height'))||110;
+  var w=c.width,h=c.height,n=data.length;ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='#222244';ctx.lineWidth=1;
+  for(var i=0;i<=4;i++){var y2=h/4*i;ctx.beginPath();ctx.moveTo(0,y2);ctx.lineTo(w,y2);ctx.stroke();}
+  if(n<2)return;
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(data[i]-yMin)/(yMax-yMin)*(h-12)-6;y=Math.max(2,Math.min(h-2,y));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+  var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),last=data[data.length-1];
+  ctx.font='10px Arial';ctx.fillStyle='#555577';ctx.fillText(mn.toFixed(1)+unit,4,h-3);ctx.fillText(mx.toFixed(1)+unit,4,12);
+  ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.fillText(last.toFixed(1)+unit,w-50,13);
+}
+function drawCharts(){
+  if(!hist||hist.length<2)return;
+  drawOneChart('cT',hist.map(function(p){return p.t;}),34,42,'#f39c12','°C');
+  drawOneChart('cH',hist.map(function(p){return p.h;}),30,90,'#4a90d9','%');
+  drawOneChart('cC',hist.map(function(p){return p.co2;}),300,3000,'#27ae60','ppm');
+}
+window.addEventListener('resize',function(){if(G('pane-gfx').classList.contains('active'))drawCharts();});
+
+function C(payload,msgId,msgTxt){
+  if(!connected||!client){flash(msgId,'❌ MQTT déconnecté','var(--red)');return;}
+  var body=JSON.stringify(payload);
+  console.log('[→MQTT]',body);
+  client.publish(CFG.cmd,body,{qos:1},function(err){
+    if(err)flash(msgId,'❌ Erreur publish','var(--red)');
+    else flash(msgId,'✅ '+(msgTxt||'Envoyé'));
+  });
+}
+function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
+function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
+function saveIncub(){C({incub_cmd:'save',duree:+G('iDur').value||21,eclos_day:+G('iEclos').value||18},'smInc','Sauvegardé');}
+function toggleMotTest(){
+  motorTestOn=!motorTestOn;
+  G('btnMT').textContent=motorTestOn?'⏹ Arrêter le test':'▶ Lancer test G→D→Centre';
+  G('btnMT').className='btn btn-sm '+(motorTestOn?'btn-red':'btn-yellow');
+  C({motor_cmd:motorTestOn?'test_start':'test_stop'},'smMot',motorTestOn?'Test lancé':'Test arrêté');
+}
+
+function connect(){
+  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
+  client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
+  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
+  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
+  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
+  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
+  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
+  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
+}
+function startApp(){
+connect();
+}
+</script>
+</body>
+</html>
