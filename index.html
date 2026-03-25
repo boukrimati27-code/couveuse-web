@@ -1,102 +1,58 @@
+🥚
+COUVEUSE INTELLIGENTE
+Accès sécurisé — saisissez votre code PIN
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Couveuse — Interface Épurée</title>
-<style>
-:root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888;--purple:#9b59b6;--cyan:#00bcd4;--yellow:#f1c40f;--pink:#e91e8c}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;font-size:14px}
-.hdr{background:#111128;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222244;flex-wrap:wrap;gap:6px}
-.hdr h1{color:var(--blue);font-size:1.15em}
-.tabs{display:flex;overflow-x:auto;background:#16162d;border-bottom:1px solid #333;sticky;top:0;z-index:100}
-.tbtn{flex:1;padding:12px 5px;border:none;background:0 0;color:var(--gray);cursor:pointer;font-size:.9em;white-space:nowrap;transition:all .2s;border-bottom:3px solid transparent}
-.tbtn.act{color:var(--blue);background:rgba(74,144,217,.1);border-bottom-color:var(--blue);font-weight:700}
-.pge{display:none;padding:15px}
-.pge.act{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
-.card{background:var(--card);padding:15px;border-radius:12px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,.3);border:1px solid #2a2a40}
-.val{font-size:1.8em;font-weight:700;margin:8px 0;display:block}
-.unit{font-size:.45em;color:var(--gray);margin-left:3px}
-label{display:block;margin-bottom:6px;color:var(--gray);font-size:.85em}
-.btn{width:100%;padding:10px;border-radius:8px;border:none;color:#fff;font-weight:700;cursor:pointer;margin-top:10px;transition:opacity .2s}
-.btn-blue{background:var(--blue)}
-.btn-yellow{background:var(--yellow);color:#000}
-</style>
-</head>
-<body>
 
-<div class="hdr">
-  <h1>🐣 COUVEUSE PRO</h1>
-  <div id="mqttSt" style="padding:4px 10px; border-radius:10px; font-size:0.8em; background:#222;">Connexion...</div>
-</div>
 
-<div class="tabs">
-  <button class="tbtn act" onclick="sh('mon')">📊 Moniteur</button>
-  <button class="tbtn" onclick="sh('gra')">📈 Graphiques</button>
-  <button class="tbtn" onclick="sh('sta')">📋 Stats</button>
-  <button class="tbtn" onclick="sh('lum')">💡 Lumières</button>
-</div>
 
-<div id="main">
-  <div id="mon" class="pge act">
-    <div class="grid">
-      <div class="card"><label>TEMPÉRATURE</label><span class="val" id="vT" style="color:var(--orange)">--<span class="unit">°C</span></span></div>
-      <div class="card"><label>HUMIDITÉ</label><span class="val" id="vH" style="color:var(--blue)">--<span class="unit">%</span></span></div>
-      <div class="card"><label>CO2</label><span class="val" id="vC" style="color:var(--purple)">--<span class="unit">ppm</span></span></div>
-      <div class="card"><label>EAU</label><span class="val" id="vW">--</span></div>
-    </div>
-  </div>
+1
+2
+3
+4
+5
+6
+7
+8
+9
+✕
+0
+✓
 
-  <div id="gra" class="pge">
-    <div class="card">
-      <p style="color:var(--gray)">Espace pour les graphiques (Canvas/Chart.js)</p>
-    </div>
-  </div>
+🥚 Couveuse ESP32-P4
+⚫ Connexion...
+--:-- | --/--/----
+📊 Moniteur
+📈 Graphiques
+📋 Statistiques
+💡 Lumières
+TEMPÉRATURE
+--°C
+Cible: --°C
+HUMIDITÉ
+--%
+Cible: --%
+CO₂
+-- ppm
+Alarme: --
+⚡ ÉTAT
+🔥 CHAUF
+💧 HUMIDIF
+💧 EAU
+🚪 PORTE
+✅ SYSTÈME
+--
+Durée chauffage
+--
+Durée humidificateur
+--
+Retournements
+⚙️ CIBLES
+Temp (°C)
 
-  <div id="sta" class="pge">
-    <div class="card">
-      <h3>Statistiques d'incubation</h3>
-      <p id="stat_info">Chargement...</p>
-    </div>
-  </div>
+Hum (%)
 
-  <div id="lum" class="pge">
-    <div class="card">
-      <label>Éclairage Intérieur</label>
-      <button class="btn btn-blue" onclick="toggleLight()">Allumer / Éteindre</button>
-      <p id="lSt" style="margin-top:10px; color:var(--gray)">État : Inconnu</p>
-    </div>
-  </div>
-</div>
+CO2 alarme
 
-<script>
-function sh(id){
-  document.querySelectorAll('.pge').forEach(p=>p.classList.remove('act'));
-  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('act'));
-  document.getElementById(id).classList.add('act');
-  event.currentTarget.classList.add('act');
-}
+✅ Appliquer
 
-function applyData(d){
-  if(!d) return;
-  if(d.temp !== undefined) document.getElementById('vT').innerHTML = d.temp.toFixed(1) + '<span class="unit">°C</span>';
-  if(d.hum !== undefined)  document.getElementById('vH').innerHTML = d.hum.toFixed(1) + '<span class="unit">%</span>';
-  if(d.co2 !== undefined)  document.getElementById('vC').innerHTML = d.co2 + '<span class="unit">ppm</span>';
-  if(d.water !== undefined) document.getElementById('vW').innerText = d.water ? "OK" : "MANQUE";
-}
-
-// Simulation ou appel réel /data
-setInterval(() => {
-  fetch('/data').then(r => r.json()).then(applyData).catch(()=>{});
-}, 2000);
-
-function toggleLight(){
-  fetch('/set?light=toggle').then(()=>console.log("Light toggled"));
-}
-</script>
-
-</body>
-</html>
+Couveuse ESP32-P4 — Accès distant HiveMQ MQTT
