@@ -282,7 +282,7 @@ var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk=";
 function _d(s){return atob(s);}
 var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
   user:null,pass:null,state:"couveuse/etat",cmd:"couveuse/cmd"};
-var client=null,connected=false,hist=[],motorTestOn=false;
+var client=null,connected=false,hist=[];
 function G(id){return document.getElementById(id);}
 function pad(n){return String(n).padStart(2,'0');}
 function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+pad(m)+'m';}
@@ -386,14 +386,7 @@ function C(payload,msgId,msgTxt){
   });
 }
 function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
-function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
 function saveIncub(){C({incub_cmd:'save',duree:+G('iDur').value||21,eclos_day:+G('iEclos').value||18},'smInc','Sauvegardé');}
-function toggleMotTest(){
-  motorTestOn=!motorTestOn;
-  G('btnMT').textContent=motorTestOn?'⏹ Arrêter le test':'▶ Lancer test G→D→Centre';
-  G('btnMT').className='btn btn-sm '+(motorTestOn?'btn-red':'btn-yellow');
-  C({motor_cmd:motorTestOn?'test_start':'test_stop'},'smMot',motorTestOn?'Test lancé':'Test arrêté');
-}
 
 function connect(){
   setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
