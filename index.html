@@ -128,7 +128,7 @@ footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
 </style>
 <script>
 var pinVal='';
-var PIN_HASH=38728; // PIN: 0305
+var PIN_HASH=38728; // PIN: 0305 — modifiez selon votre PIN
 function simpleHash(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xFFFF;return h;}
 function pinPress(n){
   if(pinVal.length>=4)return;
@@ -145,16 +145,16 @@ function pinClear(){
 function pinOk(){
   if(pinVal.length<4){G('pinErr').textContent='Saisissez 4 chiffres';return;}
   if(simpleHash(pinVal)===PIN_HASH){
-    // PIN correct - injecter les credentials et démarrer
+    // PIN correct — injecter les credentials et démarrer
     CFG.user=_d(_u); CFG.pass=_d(_p);
     G('pinScreen').style.display='none';
     startApp();
   } else {
-    G('pinErr').textContent='Code incorrect - réessayez';
+    G('pinErr').textContent='Code incorrect — réessayez';
     pinClear();
   }
 }
-</script> -->
+</script>
 
 <div class="hdr">
   <h1>🥚 Couveuse ESP32-P4</h1>
@@ -278,8 +278,8 @@ function pinOk(){
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
-// Credentials encodés - décodage à l'exécution après saisie du PIN
-var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk="; // Username: namir, Password: Moad.351969
+// Credentials encodés — décodage à l'exécution après saisie du PIN
+var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk=";
 function _d(s){return atob(s);}
 var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
   user:null,pass:null,state:"couveuse/etat",cmd:"couveuse/cmd"};
@@ -321,20 +321,8 @@ function applyData(d){
   hist=d.history||[];
   if(G('pane-gfx').classList.contains('active'))drawCharts();
   if(d.lights){var l=d.lights;
-    // Mise à jour des états des lumières
-    G('lumSt8').textContent='Canal 8 — '+(l.ch8?'ALLUMÉ':'ÉTEINT');
-    G('lumSt9').textContent='Canal 9 — '+(l.ch9?'ALLUMÉ':'ÉTEINT');
-    G('lumSt10').textContent='Canal 10 — '+(l.ch10?'ALLUMÉ':'ÉTEINT');
-    G('lumSt11').textContent='Canal 11 — '+(l.ch11?'ALLUMÉ':'ÉTEINT');
-    
-    // Mise à jour des couleurs des cartes
-    G('lumCard8').style.background=l.ch8?'var(--yellow)':'var(--card)';
-    G('lumCard9').style.background=l.ch9?'var(--yellow)':'var(--card)';
-    G('lumCard10').style.background=l.ch10?'var(--yellow)':'var(--card)';
-    G('lumCard11').style.background=l.ch11?'var(--yellow)':'var(--card)';
-    
-    if(d.stats.ok){G('stTmin').textContent=d.stats.tmin.toFixed(1)+'°C';G('stTmax').textContent=d.stats.tmax.toFixed(1)+'°C';G('stHmin').textContent=d.stats.hmin.toFixed(1)+'%';G('stHmax').textContent=d.stats.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(d.stats.co2min)+' ppm';G('stCmax').textContent=Math.round(d.stats.co2max)+' ppm';}
-    if(d.stats.heat_time)G('stHeat').textContent=d.stats.heat_time; if(d.stats.humid_time)G('stHumid').textContent=d.stats.humid_time;
+    if(s.ok){G('stTmin').textContent=s.tmin.toFixed(1)+'°C';G('stTmax').textContent=s.tmax.toFixed(1)+'°C';G('stHmin').textContent=s.hmin.toFixed(1)+'%';G('stHmax').textContent=s.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(s.co2min)+' ppm';G('stCmax').textContent=Math.round(s.co2max)+' ppm';}
+    if(s.heat_time)G('stHeat').textContent=s.heat_time; if(s.humid_time)G('stHumid').textContent=s.humid_time;
   }
   if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
     if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
@@ -397,64 +385,17 @@ function toggleMotTest(){
 }
 
 function connect(){
-  console.log('[DEBUG] Tentative de connexion MQTT...');
-  console.log('[DEBUG] URL:', CFG.url);
-  console.log('[DEBUG] User:', CFG.user);
-  console.log('[DEBUG] Pass:', CFG.pass ? '***' : 'null');
-  setMqSt('?? Connexion...','#2a2000','var(--orange)');
+  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
   client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
-  client.on('connect',function(){
-    console.log('[DEBUG] MQTT connecté !');
-    connected=true;setMqSt('?? Connecté','#1a3a1a','var(--green)');
-    
-    // S'abonner à plusieurs topics possibles
-    client.subscribe('couveuse/etat',{qos:1});
-    client.subscribe('couveuse/state',{qos:1});
-    client.subscribe('couveuse/data',{qos:1});
-    client.subscribe('esp32/couveuse',{qos:1});
-    client.subscribe('#',{qos:0}); // Tous les topics (debug)
-    
-    console.log('[DEBUG] Abonnements multiples créés');
-  });
-  client.on('message',function(topic,payload){
-    console.log('[DEBUG] Message reçu sur:', topic);
-    console.log('[DEBUG] Contenu brut:', payload.toString());
-    
-    // Essayer de parser et appliquer les données pour tous les topics
-    try{
-      var data=JSON.parse(payload.toString());
-      console.log('[DEBUG] Données parsées:', data);
-      
-      // N'appliquer que si c'est un objet avec des données de capteurs
-      if(topic===CFG.state && typeof data === 'object' && data.temp !== undefined){
-        applyData(data);
-      }
-    }catch(e){
-      console.error('[MQTT parse]',e);
-      console.log('[DEBUG] Payload non-JSON reçu sur', topic);
-    }
-  });
-  client.on('disconnect',function(){console.log('[DEBUG] MQTT déconnecté');connected=false;setMqSt('?? Déconnecté','#3a1a1a','var(--red)');});
-  client.on('reconnect',function(){console.log('[DEBUG] MQTT reconnexion...');connected=false;setMqSt('?? Reconnexion...','#2a2000','var(--orange)');});
-  client.on('error',function(e){console.error('[MQTT error]',e);connected=false;setMqSt('?? Erreur MQTT','#3a1a1a','var(--red)');});
-  client.on('close',function(){console.log('[DEBUG] MQTT fermé');connected=false;setMqSt('?? Fermé','#3a1a1a','var(--red)');});
+  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
+  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
+  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
+  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
+  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
+  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
 }
 function startApp(){
-  connect();
-  
-  // Test de publication manuelle après 3 secondes
-  setTimeout(function(){
-    if(connected && client){
-      console.log('[DEBUG] Test publication manuelle...');
-      var testMsg = JSON.stringify({test:true,timestamp:Date.now()});
-      client.publish('couveuse/test', testMsg, function(err){
-        if(err) console.error('[DEBUG] Erreur publication test:', err);
-        else console.log('[DEBUG] Publication test réussie');
-      });
-    } else {
-      console.log('[DEBUG] Pas de connexion MQTT pour le test');
-    }
-  }, 3000);
+connect();
 }
 </script>
 </body>
