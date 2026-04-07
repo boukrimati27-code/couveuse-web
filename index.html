@@ -21,7 +21,7 @@ body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;font-size:14px
 .t-mon.active{border-bottom-color:var(--blue)}.t-mot.active{border-bottom-color:var(--orange)}
 .t-tra.active{border-bottom-color:var(--cyan)}.t-fan.active{border-bottom-color:var(--purple)}
 .t-gfx.active{border-bottom-color:var(--green)}.t-sta.active{border-bottom-color:var(--yellow)}
-.t-inc.active{border-bottom-color:var(--pink)}.t-lum.active{border-bottom-color:#fff}
+.t-inc.active{border-bottom-color:var(--pink)}.t-lum.active{border-bottom-color:#fff}.t-wifi.active{border-bottom-color:var(--blue)}
 .pane{display:none;padding:11px 13px}.pane.active{display:block}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
 .card{background:var(--card);border:1px solid #2a2a3a;border-radius:10px;padding:12px;text-align:center}
@@ -87,74 +87,6 @@ footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
 </style>
 </head>
 <body>
-
-<!-- ===== ÉCRAN PIN ===== -->
-<div id="pinScreen" style="
-  position:fixed;inset:0;background:#0d0d1a;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:9999;gap:18px;">
-  <div style="font-size:2em">🥚</div>
-  <div style="color:#4a90d9;font-size:1.3em;font-weight:bold">COUVEUSE INTELLIGENTE</div>
-  <div style="color:#888;font-size:.9em">Accès sécurisé — saisissez votre code PIN</div>
-  <div style="display:flex;gap:10px;margin:8px 0" id="pinDots">
-    <div class="pd"></div><div class="pd"></div>
-    <div class="pd"></div><div class="pd"></div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,72px);gap:10px">
-    <button class="pb" onclick="pinPress(1)">1</button>
-    <button class="pb" onclick="pinPress(2)">2</button>
-    <button class="pb" onclick="pinPress(3)">3</button>
-    <button class="pb" onclick="pinPress(4)">4</button>
-    <button class="pb" onclick="pinPress(5)">5</button>
-    <button class="pb" onclick="pinPress(6)">6</button>
-    <button class="pb" onclick="pinPress(7)">7</button>
-    <button class="pb" onclick="pinPress(8)">8</button>
-    <button class="pb" onclick="pinPress(9)">9</button>
-    <button class="pb pb-clr" onclick="pinClear()" style="grid-column:1">✕</button>
-    <button class="pb" onclick="pinPress(0)">0</button>
-    <button class="pb pb-ok" onclick="pinOk()" style="grid-column:3">✓</button>
-  </div>
-  <div id="pinErr" style="color:#e74c3c;font-size:.85em;min-height:1.2em"></div>
-</div>
-<style>
-.pd{width:14px;height:14px;border-radius:50%;background:#222244;border:2px solid #4a90d9;transition:background .2s}
-.pd.filled{background:#4a90d9}
-.pb{width:72px;height:72px;border-radius:12px;background:#1a1a2e;border:2px solid #2a2a4e;
-    color:#fff;font-size:1.4em;cursor:pointer;transition:background .15s}
-.pb:active,.pb:hover{background:#2a2a5e}
-.pb-clr{border-color:#e74c3c;color:#e74c3c}
-.pb-ok{border-color:#27ae60;color:#27ae60}
-</style>
-<script>
-var pinVal='';
-var PIN_HASH=38728; // PIN: 0305
-function simpleHash(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xFFFF;return h;}
-function pinPress(n){
-  if(pinVal.length>=4)return;
-  pinVal+=n;
-  document.querySelectorAll('.pd').forEach(function(d,i){
-    d.classList.toggle('filled',i<pinVal.length);
-  });
-}
-function pinClear(){
-  pinVal='';
-  document.querySelectorAll('.pd').forEach(function(d){d.classList.remove('filled');});
-  G('pinErr').textContent='';
-}
-function pinOk(){
-  if(pinVal.length<4){G('pinErr').textContent='Saisissez 4 chiffres';return;}
-  if(simpleHash(pinVal)===PIN_HASH){
-    // PIN correct - injecter les credentials et démarrer
-    CFG.user=_d(_u); CFG.pass=_d(_p);
-    G('pinScreen').style.display='none';
-    startApp();
-  } else {
-    G('pinErr').textContent='Code incorrect - réessayez';
-    pinClear();
-  }
-}
-</script> -->
-
 <div class="hdr">
   <h1>🥚 Couveuse ESP32-P4</h1>
   <div class="hright">
@@ -167,6 +99,7 @@ function pinOk(){
   <div class="tab t-gfx" onclick="ST('gfx',this)">📈 Graphiques</div>
   <div class="tab t-sta" onclick="ST('sta',this)">📋 Statistiques</div>
   <div class="tab t-lum" onclick="ST('lum',this)">💡 Lumières</div>
+  <div class="tab t-wifi" onclick="ST('wifi',this)">📶 WiFi</div>
 </div>
 
 <!-- MONITEUR -->
@@ -198,9 +131,6 @@ function pinOk(){
     <span class="save-msg" id="smMon"></span>
   </div>
 </div>
-
-
-
 
 <!-- GRAPHIQUES -->
 <div class="pane" id="pane-gfx">
@@ -244,7 +174,6 @@ function pinOk(){
   </table>
 </div>
 
-
 <!-- LUMIERES -->
 <div class="pane" id="pane-lum">
   <h2 style="color:var(--yellow)">💡 LUMIÈRES — Canaux PCA9685</h2>
@@ -273,15 +202,51 @@ function pinOk(){
   </div>
 </div>
 
+<!-- WIFI -->
+<div class="pane" id="pane-wifi">
+  <h2 style="color:var(--blue)">📶 STATUT WIFI</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0">
+    <div class="card"><div class="lbl">RÉSEAU CONNECTÉ</div><div class="val" id="wSsid" style="font-size:.9em;color:var(--green)">---</div></div>
+    <div class="card"><div class="lbl">ADRESSE IP</div><div class="val" id="wIp" style="font-size:.9em;color:var(--cyan)">---</div></div>
+  </div>
+  <div id="wStatus" style="background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:8px 12px;margin:7px 0;font-size:.78em;color:#aaa">⏳ Récupération du statut WiFi...</div>
+
+  <hr class="sep">
+  <h2 style="color:var(--blue)">🔑 CONNECTER UN RÉSEAU</h2>
+  <div class="info warn">ℹ️ Entrez le nom et le mot de passe de votre réseau WiFi. L'ESP32 se connectera et mémorisera le réseau même après redémarrage.</div>
+
+  <div style="margin:14px 0;display:flex;flex-direction:column;gap:10px;max-width:420px">
+    <div class="ti">
+      <label>Nom du réseau (SSID)</label>
+      <input type="text" id="wfSsid" placeholder="NomDuReseau" autocomplete="off" autocapitalize="none"
+             style="width:100%;background:#111;color:#fff;border:1px solid var(--blue);border-radius:8px;padding:8px 12px;font-size:.95em">
+    </div>
+    <div class="ti">
+      <label>Mot de passe</label>
+      <div style="position:relative">
+        <input type="password" id="wfPass" placeholder="Mot de passe WiFi" autocomplete="off"
+               style="width:100%;background:#111;color:#fff;border:1px solid var(--blue);border-radius:8px;padding:8px 40px 8px 12px;font-size:.95em">
+        <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray);font-size:1.1em">👁</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="wifiConnect()">🔗 Se connecter</button>
+    <button class="btn btn-gray" onclick="wifiForget()">🗑 Oublier le réseau</button>
+    <span class="save-msg" id="smWifi"></span>
+  </div>
+
+  <hr class="sep">
+  <h2 style="color:var(--gray)">ℹ️ Point d'accès de secours</h2>
+  <div class="info">📡 Réseau <b>Couveuse-P4</b> (mdp: <b>couveuse123</b>) — IP: <b>192.168.4.1</b> — toujours actif même sans box.</div>
+</div>
+
 <footer>Couveuse ESP32-P4 — Accès distant HiveMQ MQTT</footer>
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
-// Credentials encodés - décodage à l'exécution après saisie du PIN
-var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk="; // Username: namir, Password: Moad.351969
-function _d(s){return atob(s);}
-var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
-  user:null,pass:null,state:"couveuse/etat",cmd:"couveuse/cmd"};
+var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",user:"namir",pass:"Moad.351969",state:"couveuse/etat",cmd:"couveuse/cmd"};
 var client=null,connected=false,hist=[],motorTestOn=false;
 function G(id){return document.getElementById(id);}
 function pad(n){return String(n).padStart(2,'0');}
@@ -291,12 +256,13 @@ function ST(id,el){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   G('pane-'+id).classList.add('active'); el.classList.add('active');
   if(id==='gfx')setTimeout(drawCharts,60);
+  if(id==='wifi')refreshWifiStatus();
 }
 function setBadge(id,on,a,b){var e=G(id);if(!e)return;e.textContent=on?a:b;e.className='badge '+(on?'on':'off');}
 function setFault(id,ok,a,b){var e=G(id);if(!e)return;e.textContent=ok?a:b;e.className='badge '+(ok?'on':'alarm');}
 function setSw(si,li,on,la,lb){var sw=G(si),l=G(li);if(!sw||!l)return;on?sw.classList.add('on'):sw.classList.remove('on');l.textContent=on?la:lb;l.style.color=on?'var(--green)':'var(--gray)';}
 function flash(id,msg,col){if(!id)return;var e=G(id);if(!e)return;e.textContent=msg;e.style.color=col||'var(--green)';clearTimeout(e._t);e._t=setTimeout(function(){e.textContent='';},3000);}
-function setMqSt(txt,bg,col){var e=G('mqttSt');e.textContent=txt;e.style.background=bg;e.style.color=col;}
+function setMqSt(txt,bg,col){var e=G('mqttSt');if(!e)return;e.textContent=txt;e.style.background=bg;e.style.color=col;}
 function setLum(ch,on){var c=G('lumCard'+ch),s=G('lumSt'+ch);if(!c||!s)return;on?c.classList.add('on'):c.classList.remove('on');s.textContent='Canal '+ch+' — '+(on?'ALLUMÉ':'ÉTEINT');}
 
 function applyData(d){
@@ -319,22 +285,32 @@ function applyData(d){
   if(ae!==iT)iT.value=d.temp_target; if(ae!==iH)iH.value=Math.round(d.hum_target); if(ae!==iC)iC.value=Math.round(d.co2_alarm);
   hist=d.history||[];
   if(G('pane-gfx').classList.contains('active'))drawCharts();
+
+  // === LUMIÈRES (dans if(d.lights)) ===
   if(d.lights){var l=d.lights;
-    // Mise à jour des états des lumières
     G('lumSt8').textContent='Canal 8 — '+(l.ch8?'ALLUMÉ':'ÉTEINT');
     G('lumSt9').textContent='Canal 9 — '+(l.ch9?'ALLUMÉ':'ÉTEINT');
     G('lumSt10').textContent='Canal 10 — '+(l.ch10?'ALLUMÉ':'ÉTEINT');
     G('lumSt11').textContent='Canal 11 — '+(l.ch11?'ALLUMÉ':'ÉTEINT');
-    
-    // Mise à jour des couleurs des cartes
     G('lumCard8').style.background=l.ch8?'var(--yellow)':'var(--card)';
     G('lumCard9').style.background=l.ch9?'var(--yellow)':'var(--card)';
     G('lumCard10').style.background=l.ch10?'var(--yellow)':'var(--card)';
     G('lumCard11').style.background=l.ch11?'var(--yellow)':'var(--card)';
-    
-    if(d.stats.ok){G('stTmin').textContent=d.stats.tmin.toFixed(1)+'°C';G('stTmax').textContent=d.stats.tmax.toFixed(1)+'°C';G('stHmin').textContent=d.stats.hmin.toFixed(1)+'%';G('stHmax').textContent=d.stats.hmax.toFixed(1)+'%';G('stCmin').textContent=Math.round(d.stats.co2min)+' ppm';G('stCmax').textContent=Math.round(d.stats.co2max)+' ppm';}
-    if(d.stats.heat_time)G('stHeat').textContent=d.stats.heat_time; if(d.stats.humid_time)G('stHumid').textContent=d.stats.humid_time;
   }
+
+  // === STATISTIQUES (CORRIGÉ: en-dehors du bloc lights) ===
+  if(d.stats && d.stats.ok){
+    G('stTmin').textContent=d.stats.tmin.toFixed(1)+'°C';
+    G('stTmax').textContent=d.stats.tmax.toFixed(1)+'°C';
+    G('stHmin').textContent=d.stats.hmin.toFixed(1)+'%';
+    G('stHmax').textContent=d.stats.hmax.toFixed(1)+'%';
+    G('stCmin').textContent=Math.round(d.stats.co2min)+' ppm';
+    G('stCmax').textContent=Math.round(d.stats.co2max)+' ppm';
+  }
+  if(d.stats && d.stats.heat_time) G('stHeat').textContent=d.stats.heat_time;
+  if(d.stats && d.stats.humid_time) G('stHumid').textContent=d.stats.humid_time;
+
+  // === ALARMES ===
   if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
     if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
     else{G('alarmEmpty').style.display='none';G('alarmTbl').style.display='';
@@ -343,6 +319,8 @@ function applyData(d){
         tb.appendChild(tr);});
     }
   }
+
+  // === REDÉMARRAGES ===
   if(d.reboots!==undefined){var rb=G('rebootBody');rb.innerHTML='';
     if(d.reboots.length===0){G('rebootEmpty').style.display='';G('rebootTbl').style.display='none';}
     else{G('rebootEmpty').style.display='none';G('rebootTbl').style.display='';
@@ -377,13 +355,24 @@ function drawCharts(){
 window.addEventListener('resize',function(){if(G('pane-gfx').classList.contains('active'))drawCharts();});
 
 function C(payload,msgId,msgTxt){
-  if(!connected||!client){flash(msgId,'❌ MQTT déconnecté','var(--red)');return;}
   var body=JSON.stringify(payload);
-  console.log('[→MQTT]',body);
-  client.publish(CFG.cmd,body,{qos:1},function(err){
-    if(err)flash(msgId,'❌ Erreur publish','var(--red)');
-    else flash(msgId,'✅ '+(msgTxt||'Envoyé'));
-  });
+  // Mode distant : MQTT
+  if(connected&&client){
+    console.log('[→MQTT]',body);
+    client.publish(CFG.cmd,body,{qos:1},function(err){
+      if(err)flash(msgId,'❌ Erreur publish','var(--red)');
+      else flash(msgId,'✅ '+(msgTxt||'Envoyé (MQTT)'));
+    });
+    return;
+  }
+  // Mode local : HTTP (accès direct à l'ESP32)
+  var isTarget=(payload.temp!==undefined||payload.hum!==undefined||payload.co2!==undefined)
+    &&payload.motor_cmd===undefined&&payload.trappe_cmd===undefined&&payload.fan_cmd===undefined&&payload.light_cmd===undefined&&payload.incub_cmd===undefined;
+  var route=isTarget?'/set':'/cmd';
+  console.log('[→HTTP]',route,body);
+  fetch(route,{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){if(r.ok)flash(msgId,'✅ '+(msgTxt||'Appliqué (HTTP)'));else flash(msgId,'❌ HTTP '+r.status,'var(--red)');})
+    .catch(function(){flash(msgId,'❌ Erreur réseau','var(--red)');});
 }
 function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
 function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
@@ -396,65 +385,564 @@ function toggleMotTest(){
 }
 
 function connect(){
-  console.log('[DEBUG] Tentative de connexion MQTT...');
-  console.log('[DEBUG] URL:', CFG.url);
-  console.log('[DEBUG] User:', CFG.user);
-  console.log('[DEBUG] Pass:', CFG.pass ? '***' : 'null');
-  setMqSt('?? Connexion...','#2a2000','var(--orange)');
+  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
   client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
-  client.on('connect',function(){
-    console.log('[DEBUG] MQTT connecté !');
-    connected=true;setMqSt('?? Connecté','#1a3a1a','var(--green)');
-    
-    // S'abonner à plusieurs topics possibles
-    client.subscribe('couveuse/etat',{qos:1});
-    client.subscribe('couveuse/state',{qos:1});
-    client.subscribe('couveuse/data',{qos:1});
-    client.subscribe('esp32/couveuse',{qos:1});
-    client.subscribe('#',{qos:0}); // Tous les topics (debug)
-    
-    console.log('[DEBUG] Abonnements multiples créés');
-  });
-  client.on('message',function(topic,payload){
-    console.log('[DEBUG] Message reçu sur:', topic);
-    console.log('[DEBUG] Contenu brut:', payload.toString());
-    
-    // Essayer de parser et appliquer les données pour tous les topics
-    try{
-      var data=JSON.parse(payload.toString());
-      console.log('[DEBUG] Données parsées:', data);
-      
-      // N'appliquer que si c'est un objet avec des données de capteurs
-      if(topic===CFG.state && typeof data === 'object' && data.temp !== undefined){
-        applyData(data);
-      }
-    }catch(e){
-      console.error('[MQTT parse]',e);
-      console.log('[DEBUG] Payload non-JSON reçu sur', topic);
-    }
-  });
-  client.on('disconnect',function(){console.log('[DEBUG] MQTT déconnecté');connected=false;setMqSt('?? Déconnecté','#3a1a1a','var(--red)');});
-  client.on('reconnect',function(){console.log('[DEBUG] MQTT reconnexion...');connected=false;setMqSt('?? Reconnexion...','#2a2000','var(--orange)');});
-  client.on('error',function(e){console.error('[MQTT error]',e);connected=false;setMqSt('?? Erreur MQTT','#3a1a1a','var(--red)');});
-  client.on('close',function(){console.log('[DEBUG] MQTT fermé');connected=false;setMqSt('?? Fermé','#3a1a1a','var(--red)');});
+  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
+  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
+  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
+  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
+  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
+  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
 }
-function startApp(){
+
+// ─── Détection automatique : local (ESP32) ou distant (GitHub/internet) ───
+var IS_LOCAL = (function() {
+  var h = window.location.hostname;
+  return h === 'localhost'
+      || h === '127.0.0.1'
+      || h.endsWith('.local')
+      || /^192\.168\./.test(h)
+      || /^10\./.test(h)
+      || /^172\.(1[6-9]|2\d|3[01])\./.test(h);
+})();
+
+var httpTimer = null;
+
+function fetchLocal() {
+  fetch('/data')
+    .then(function(r){ return r.json(); })
+    .then(applyData)
+    .catch(function(){});
+}
+
+if (IS_LOCAL) {
+  // ── MODE LOCAL : HTTP pur, pas de MQTT
+  setMqSt('🔵 Mode local','#0a1a2a','var(--blue)');
+  fetchLocal();
+  httpTimer = setInterval(fetchLocal, 2000);
+} else {
+  // ── MODE DISTANT : MQTT via HiveMQ
+  fetchLocal();
+  httpTimer = setInterval(function(){
+    if (!connected) fetchLocal();
+  }, 2000);
   connect();
-  
-  // Test de publication manuelle après 3 secondes
-  setTimeout(function(){
-    if(connected && client){
-      console.log('[DEBUG] Test publication manuelle...');
-      var testMsg = JSON.stringify({test:true,timestamp:Date.now()});
-      client.publish('couveuse/test', testMsg, function(err){
-        if(err) console.error('[DEBUG] Erreur publication test:', err);
-        else console.log('[DEBUG] Publication test réussie');
-      });
-    } else {
-      console.log('[DEBUG] Pas de connexion MQTT pour le test');
-    }
-  }, 3000);
 }
+
+// ── WiFi local ─
+function togglePw(){var i=G('wfPass');i.type=(i.type==='password')?'text':'password';}
+
+function wifiConnect(){
+  var ssid=G('wfSsid').value.trim(), pass=G('wfPass').value;
+  if(!ssid){flash('smWifi','❌ Entrez un nom de réseau','var(--red)');return;}
+  flash('smWifi','⏳ Connexion...','var(--orange)');
+  fetch('/wifi_connect',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ssid:ssid,pass:pass})})
+  .then(function(r){return r.text();})
+  .then(function(){
+    flash('smWifi','✅ Commande envoyée — patientez 15s','var(--green)');
+    setTimeout(refreshWifiStatus,15000);
+  }).catch(function(){flash('smWifi','❌ Erreur réseau','var(--red)');});
+}
+
+function wifiForget(){
+  if(!confirm('Oublier le réseau WiFi mémorisé ?')) return;
+  fetch('/wifi_forget',{method:'POST'}).then(function(){
+    flash('smWifi','✅ Réseau oublié','var(--green)');
+    G('wSsid').textContent='---'; G('wIp').textContent='---';
+    G('wStatus').textContent='ℹ️ Aucun réseau mémorisé. AP seul actif.';
+  }).catch(function(){flash('smWifi','❌ Erreur','var(--red)');});
+}
+
+function refreshWifiStatus(){
+  fetch('/data').then(function(r){return r.json();}).then(function(d){
+    var ssid=d.ssid||'', ip=d.ip||'---';
+    G('wSsid').textContent=ssid||'Non connecté';
+    G('wSsid').style.color=ssid?'var(--green)':'var(--gray)';
+    G('wIp').textContent=ip;
+    G('wStatus').textContent=ssid
+      ?('✅ Connecté à "'+ssid+'" — IP: '+ip)
+      :'⚠️ Non connecté — AP actif (192.168.4.1)';
+    G('wStatus').style.background=ssid?'#0d1a0d':'#1a1000';
+  }).catch(function(){});
+}
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
 </script>
 </body>
 </html>
+
