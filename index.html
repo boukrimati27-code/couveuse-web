@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -127,7 +128,7 @@ footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
 </style>
 <script>
 var pinVal='';
-var PIN_HASH=38728; // PIN: 0305 — modifiez selon votre PIN
+var PIN_HASH=38728; // PIN: 0305
 function simpleHash(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))&0xFFFF;return h;}
 function pinPress(n){
   if(pinVal.length>=4)return;
@@ -144,16 +145,16 @@ function pinClear(){
 function pinOk(){
   if(pinVal.length<4){G('pinErr').textContent='Saisissez 4 chiffres';return;}
   if(simpleHash(pinVal)===PIN_HASH){
-    // PIN correct — injecter les credentials et démarrer
+    // PIN correct - injecter les credentials et démarrer
     CFG.user=_d(_u); CFG.pass=_d(_p);
     G('pinScreen').style.display='none';
     startApp();
   } else {
-    G('pinErr').textContent='Code incorrect — réessayez';
+    G('pinErr').textContent='Code incorrect - réessayez';
     pinClear();
   }
 }
-</script>
+</script> -->
 
 <div class="hdr">
   <h1>🥚 Couveuse ESP32-P4</h1>
@@ -277,12 +278,12 @@ function pinOk(){
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <script>
-// Credentials encodés — décodage à l'exécution après saisie du PIN
-var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk=";
+// Credentials encodés - décodage à l'exécution après saisie du PIN
+var _u="bmFtaXI=",_p="TW9hZC4zNTE5Njk="; // Username: namir, Password: Moad.351969
 function _d(s){return atob(s);}
 var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",
   user:null,pass:null,state:"couveuse/etat",cmd:"couveuse/cmd"};
-var client=null,connected=false,hist=[];
+var client=null,connected=false,hist=[],motorTestOn=false;
 function G(id){return document.getElementById(id);}
 function pad(n){return String(n).padStart(2,'0');}
 function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+pad(m)+'m';}
@@ -386,20 +387,74 @@ function C(payload,msgId,msgTxt){
   });
 }
 function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
+function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
 function saveIncub(){C({incub_cmd:'save',duree:+G('iDur').value||21,eclos_day:+G('iEclos').value||18},'smInc','Sauvegardé');}
+function toggleMotTest(){
+  motorTestOn=!motorTestOn;
+  G('btnMT').textContent=motorTestOn?'⏹ Arrêter le test':'▶ Lancer test G→D→Centre';
+  G('btnMT').className='btn btn-sm '+(motorTestOn?'btn-red':'btn-yellow');
+  C({motor_cmd:motorTestOn?'test_start':'test_stop'},'smMot',motorTestOn?'Test lancé':'Test arrêté');
+}
 
 function connect(){
-  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
+  console.log('[DEBUG] Tentative de connexion MQTT...');
+  console.log('[DEBUG] URL:', CFG.url);
+  console.log('[DEBUG] User:', CFG.user);
+  console.log('[DEBUG] Pass:', CFG.pass ? '***' : 'null');
+  setMqSt('?? Connexion...','#2a2000','var(--orange)');
   client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
-  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
-  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
-  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
-  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
-  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
-  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
+  client.on('connect',function(){
+    console.log('[DEBUG] MQTT connecté !');
+    connected=true;setMqSt('?? Connecté','#1a3a1a','var(--green)');
+    
+    // S'abonner à plusieurs topics possibles
+    client.subscribe('couveuse/etat',{qos:1});
+    client.subscribe('couveuse/state',{qos:1});
+    client.subscribe('couveuse/data',{qos:1});
+    client.subscribe('esp32/couveuse',{qos:1});
+    client.subscribe('#',{qos:0}); // Tous les topics (debug)
+    
+    console.log('[DEBUG] Abonnements multiples créés');
+  });
+  client.on('message',function(topic,payload){
+    console.log('[DEBUG] Message reçu sur:', topic);
+    console.log('[DEBUG] Contenu brut:', payload.toString());
+    
+    // Essayer de parser et appliquer les données pour tous les topics
+    try{
+      var data=JSON.parse(payload.toString());
+      console.log('[DEBUG] Données parsées:', data);
+      
+      // N'appliquer que si c'est un objet avec des données de capteurs
+      if(topic===CFG.state && typeof data === 'object' && data.temp !== undefined){
+        applyData(data);
+      }
+    }catch(e){
+      console.error('[MQTT parse]',e);
+      console.log('[DEBUG] Payload non-JSON reçu sur', topic);
+    }
+  });
+  client.on('disconnect',function(){console.log('[DEBUG] MQTT déconnecté');connected=false;setMqSt('?? Déconnecté','#3a1a1a','var(--red)');});
+  client.on('reconnect',function(){console.log('[DEBUG] MQTT reconnexion...');connected=false;setMqSt('?? Reconnexion...','#2a2000','var(--orange)');});
+  client.on('error',function(e){console.error('[MQTT error]',e);connected=false;setMqSt('?? Erreur MQTT','#3a1a1a','var(--red)');});
+  client.on('close',function(){console.log('[DEBUG] MQTT fermé');connected=false;setMqSt('?? Fermé','#3a1a1a','var(--red)');});
 }
 function startApp(){
-connect();
+  connect();
+  
+  // Test de publication manuelle après 3 secondes
+  setTimeout(function(){
+    if(connected && client){
+      console.log('[DEBUG] Test publication manuelle...');
+      var testMsg = JSON.stringify({test:true,timestamp:Date.now()});
+      client.publish('couveuse/test', testMsg, function(err){
+        if(err) console.error('[DEBUG] Erreur publication test:', err);
+        else console.log('[DEBUG] Publication test réussie');
+      });
+    } else {
+      console.log('[DEBUG] Pas de connexion MQTT pour le test');
+    }
+  }, 3000);
 }
 </script>
 </body>
