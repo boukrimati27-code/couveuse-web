@@ -1409,51 +1409,96 @@ const LightsScreen = ({ onBack }) => {
   );
 };
 
+// ─── CONFIGURATION ESP32 ─────────────────────────────────────────
+// ⚠️ Modifier ici si votre IP change
+// Option 1 : mDNS  (recommandé — toujours fixe)
+// Option 2 : IP fixe sur votre réseau local
+const ESP32_URL = 'http://couveuse.local';
+
 // ─── MAIN APP ────────────────────────────────────────────────────
 const App = () => {
   const [screen, setScreen] = React.useState('dashboard');
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [tweaksVisible, setTweaksVisible] = React.useState(false);
+  const [connected, setConnected] = React.useState(false);
+  const [espData, setEspData] = React.useState(null);
   const [params, setParams] = React.useState({
     tempTarget:37.5, tempMargin:0.3, humTarget:60, humMargin:2,
     co2Max:2000, duration:21, turnInterval:60, eclosionDay:18,
     humEclosion:70, motorMs:5000, telegram:true, alertCO2:true, screensaver:'5min'
   });
 
-  // Simulate live data
-  const mkHistory = (base, spread, n=30) => Array.from({length:n},(_,i)=>+(base + (Math.sin(i*0.5)+Math.random()-0.5)*spread).toFixed(1));
-  const [liveTemp, setLiveTemp] = React.useState(37.6);
-  const [liveHum, setLiveHum] = React.useState(61.2);
-  const [liveCo2, setLiveCo2] = React.useState(1240);
-  const [time, setTime] = React.useState('');
-  const [date, setDate] = React.useState('');
+  // Données live depuis ESP32
+  const [liveTemp, setLiveTemp] = React.useState(0);
+  const [liveHum,  setLiveHum]  = React.useState(0);
+  const [liveCo2,  setLiveCo2]  = React.useState(0);
+  const [time, setTime] = React.useState('--:--:--');
+  const [date, setDate] = React.useState('--/--/----');
 
+  // Historique local 30 points
+  const [histTemp, setHistTemp] = React.useState([]);
+  const [histHum,  setHistHum]  = React.useState([]);
+  const [histCo2,  setHistCo2]  = React.useState([]);
+
+  // ── Fetch ESP32 toutes les 2 secondes ──
   React.useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setTime(now.toLocaleTimeString('fr-FR'));
-      setDate(now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}));
-      setLiveTemp(t => +(t + (Math.random()-0.5)*0.08).toFixed(2));
-      setLiveHum(h => +(h + (Math.random()-0.5)*0.3).toFixed(1));
-      setLiveCo2(c => Math.max(400, Math.min(1900, +(c + (Math.random()-0.48)*8).toFixed(0))));
+    const fetchData = () => {
+      fetch(`${ESP32_URL}/data`)
+        .then(r => r.json())
+        .then(d => {
+          setConnected(true);
+          setEspData(d);
+          setLiveTemp(d.temp || 0);
+          setLiveHum (d.hum  || 0);
+          setLiveCo2 (d.co2  || 0);
+          if (d.time) setTime(d.time);
+          if (d.date) setDate(d.date);
+          setHistTemp(h => [...h.slice(-29), d.temp]);
+          setHistHum (h => [...h.slice(-29), d.hum]);
+          setHistCo2 (h => [...h.slice(-29), d.co2]);
+          if (d.temp_target) setParams(p => ({...p,
+            tempTarget:  d.temp_target,
+            humTarget:   d.hum_target,
+            co2Max:      d.co2_alarm,
+            turnInterval:d.motor ? d.motor.interval_min : p.turnInterval,
+            duration:    d.incub ? d.incub.total_days   : p.duration,
+          }));
+        })
+        .catch(() => setConnected(false));
     };
-    tick();
-    const id = setInterval(tick, 1000);
-    return ()=>clearInterval(id);
+    fetchData();
+    const id = setInterval(fetchData, 2000);
+    return () => clearInterval(id);
   }, []);
 
+  // ── Envoi commande vers ESP32 ──
+  const sendCmd = (payload) => {
+    fetch(`${ESP32_URL}/set`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    }).catch(() => console.warn('Erreur envoi commande'));
+  };
+
+  const d = espData || {};
   const state = {
     temp: liveTemp, hum: liveHum, co2: liveCo2,
-    tempHistory: mkHistory(37.5, 0.4),
-    humHistory: mkHistory(60, 3),
-    co2History: mkHistory(1200, 200),
-    heat: liveTemp < params.tempTarget - params.tempMargin,
-    humid: liveHum < params.humTarget - params.humMargin,
-    water: false, door: false,
-    fan: 45, servoOpen: false,
-    motorDir: 'STOP', turnCount: 47, turnRemaining: 2134,
-    day: 12, params,
-    tempMin: 36.8, tempMax: 38.1, humMin: 56, humMax: 68,
+    tempHistory: histTemp,
+    humHistory:  histHum,
+    co2History:  histCo2,
+    heat:      d.heat_on  || false,
+    humid:     d.humid_on || false,
+    water:     d.water_ok !== false,
+    door:      d.door_ok  !== false,
+    fan:       d.fan    ? d.fan.speed   : 0,
+    servoOpen: d.trappe ? d.trappe.open : false,
+    motorDir:  d.motor  ? d.motor.dir   : 'STOP',
+    turnCount: d.turn_count || 0,
+    turnRemaining: d.motor  ? d.motor.interval_min * 60 : 0,
+    day:       d.incub  ? d.incub.day   : 0,
+    params, connected, sendCmd,
+    tempMin: 35, tempMax: 42,
+    humMin:  30, humMax:  90,
   };
 
   // Tweaks setup
@@ -1482,7 +1527,14 @@ const App = () => {
         ::-webkit-scrollbar{width:4px;background:transparent}
         ::-webkit-scrollbar-thumb{background:#2a3848;border-radius:2px}
       `}</style>
-      <TopBar time={time} date={date} wifi={true} onMenu={()=>setMenuOpen(true)} alarm={false}/>
+      <TopBar time={time} date={date} wifi={connected} onMenu={()=>setMenuOpen(true)} alarm={false}/>
+      {!connected && (
+        <div style={{background:'#3a0a0a',borderBottom:'1px solid #e8383844',
+          padding:'5px 16px',fontSize:11,color:'#e83838',textAlign:'center',flexShrink:0}}>
+          ⚠️ ESP32 non joignable — vérifiez que la couveuse est allumée et sur le même réseau
+          &nbsp;|&nbsp; <b>{ESP32_URL}</b>
+        </div>
+      )}
       <div style={{flex:1,overflow:'hidden'}}>
         {screen==='dashboard' && <Dashboard state={state} onNavigate={setScreen}/>}
         {screen==='settings'  && <SettingsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams}/>}
