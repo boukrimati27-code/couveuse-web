@@ -2,947 +2,1525 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Couveuse — Accès distant</title>
+<meta name="viewport" content="width=1024, initial-scale=1.0">
+<title>Couveuse Automatique — ESP32-P4</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0d1a;--card:#1a1a2e;--blue:#4a90d9;--green:#27ae60;--orange:#f39c12;--red:#e74c3c;--gray:#888;--purple:#9b59b6;--cyan:#00bcd4;--yellow:#f1c40f;--pink:#e91e8c}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:#fff;font-family:Arial,sans-serif;font-size:14px}
-.hdr{background:#111128;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #222244;flex-wrap:wrap;gap:6px}
-.hdr h1{color:var(--blue);font-size:1.15em}
-.hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-#mqttSt{font-size:.72em;padding:3px 10px;border-radius:10px;background:#222;color:var(--gray);transition:all .3s}
-.timebar{color:var(--gray);font-size:.75em}
-.tabs{display:flex;background:#0a0a18;border-bottom:2px solid #222244;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:10px 15px;cursor:pointer;font-size:.82em;font-weight:bold;color:var(--gray);border-bottom:3px solid transparent;white-space:nowrap;user-select:none}
-.tab:hover{color:#fff;background:#111128}
-.tab.active{color:#fff}
-.t-mon.active{border-bottom-color:var(--blue)}.t-mot.active{border-bottom-color:var(--orange)}
-.t-tra.active{border-bottom-color:var(--cyan)}.t-fan.active{border-bottom-color:var(--purple)}
-.t-gfx.active{border-bottom-color:var(--green)}.t-sta.active{border-bottom-color:var(--yellow)}
-.t-inc.active{border-bottom-color:var(--pink)}.t-lum.active{border-bottom-color:#fff}.t-wifi.active{border-bottom-color:var(--blue)}
-.pane{display:none;padding:11px 13px}.pane.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
-.card{background:var(--card);border:1px solid #2a2a3a;border-radius:10px;padding:12px;text-align:center}
-.card .val{font-size:1.8em;font-weight:bold;margin:5px 0}
-.card .lbl{font-size:.7em;color:var(--gray)}.card .sub{font-size:.74em;color:var(--gray);margin-top:3px}
-.ok{color:var(--green)}.warn{color:var(--orange)}.err{color:var(--red)}
-.status-bar{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}
-.badge{padding:4px 10px;border-radius:20px;font-size:.74em;font-weight:bold}
-.badge.on{background:#1a3a1a;color:var(--green);border:1px solid var(--green)}
-.badge.off{background:#1a1a1a;color:var(--gray);border:1px solid #333}
-.badge.alarm{background:#3a1a1a;color:var(--red);border:1px solid var(--red)}
-h2{margin:12px 0 6px;font-size:.9em}
-.sep{border:none;border-top:1px solid #222244;margin:12px 0}
-.ti{display:flex;flex-direction:column;gap:3px}
-.ti label{font-size:.7em;color:var(--gray)}
-.ti input{background:#111;color:#fff;border:1px solid var(--blue);border-radius:6px;padding:4px 8px;width:110px;font-size:.85em}
-.targets{display:flex;gap:8px;flex-wrap:wrap;margin:7px 0}
-.info{background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:8px 12px;margin:7px 0;font-size:.78em;color:#aaa;line-height:1.55}
-.info.warn{background:#1a1000;border-color:#3a2200}
-.btn{border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.84em;font-weight:bold;transition:opacity .15s}
-.btn:hover{opacity:.8}
-.btn-blue{background:var(--blue);color:#fff}.btn-green{background:var(--green);color:#fff}
-.btn-orange{background:var(--orange);color:#fff}.btn-red{background:var(--red);color:#fff}
-.btn-gray{background:#2a2a3a;color:#bbb}.btn-cyan{background:var(--cyan);color:#000}
-.btn-purple{background:var(--purple);color:#fff}.btn-yellow{background:var(--yellow);color:#000}
-.btn-pink{background:var(--pink);color:#fff}
-.btn-sm{padding:4px 10px;font-size:.78em;border-radius:6px}
-.btn-row{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0;align-items:center}
-.save-msg{font-size:.77em;color:var(--green);margin-left:7px}
-.cnt-row{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0}
-.cnt{background:var(--card);border:1px solid #2a2a3a;border-radius:8px;padding:8px 13px;flex:1;min-width:120px}
-.cnt .cv{font-size:1.15em;font-weight:bold;color:var(--orange)}.cnt .cl{font-size:.68em;color:var(--gray);margin-top:2px}
-canvas{width:100%!important;background:var(--card);border-radius:8px;border:1px solid #2a2a3a;display:block}
-.mbar{background:#111;border:1px solid #2a2a3a;border-radius:6px;height:18px;position:relative;margin:5px 0;overflow:hidden}
-.mbar-cur{position:absolute;top:1px;width:8px;height:16px;background:var(--orange);border-radius:3px;transform:translateX(-50%);transition:left .4s}
-.mbar-mid{position:absolute;top:0;left:50%;width:2px;height:100%;background:#444;transform:translateX(-50%)}
-.sr{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap}
-.sr label{min-width:180px;font-size:.8em;color:var(--gray)}
-.vb{background:#111;border:1px solid #2a2a3a;border-radius:6px;padding:4px 10px;min-width:72px;text-align:center;font-weight:bold}
-.sw-row{display:flex;align-items:center;gap:8px}
-.sw{width:44px;height:23px;background:#333;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.sw.on{background:var(--green)}.sw::after{content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;background:#fff;border-radius:50%;transition:left .2s}
-.sw.on::after{left:23px}
-.spd-bar{background:#1a1a2e;border-radius:4px;height:13px;margin:4px 0;overflow:hidden;border:1px solid #2a2a3a}
-.spd-fill{height:100%;border-radius:4px;transition:width .5s}
-.lum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:10px 0}
-.lum-card{background:var(--card);border:2px solid #2a2a3a;border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
-.lum-card:hover{opacity:.85}
-.lum-card.on{border-color:var(--yellow);background:#1a1a00;box-shadow:0 0 18px rgba(241,196,15,.2)}
-.lum-icon{font-size:2em;margin-bottom:6px}
-.lum-name{font-size:.85em;font-weight:bold;color:#ccc}
-.lum-st{font-size:.72em;color:var(--gray);margin-top:3px}
-.lum-card.on .lum-st{color:var(--yellow)}
-.chart-title{font-size:.79em;color:var(--gray);margin:10px 0 3px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase}
-.stbl{width:100%;border-collapse:collapse;margin:7px 0;font-size:.81em}
-.stbl th{background:#111128;color:var(--gray);padding:6px 9px;text-align:left;border-bottom:1px solid #222244}
-.stbl td{padding:6px 9px;border-bottom:1px solid #1a1a2e}
-.stbl tr:hover td{background:#111128}
-.inc-progress{background:#111;border-radius:8px;height:14px;overflow:hidden;margin:8px 0;border:1px solid #2a2a3a}
-.inc-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--orange),var(--red));transition:width .5s}
-.num-in{background:#111;color:#fff;border:1px solid;border-radius:6px;padding:4px;width:58px;text-align:center;font-size:.88em}
-footer{text-align:center;color:#222244;font-size:.65em;padding:8px 0}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1024px; height: 600px; overflow: hidden; background: #0a0c0f; font-family: 'Barlow', sans-serif; }
+  #root { width: 1024px; height: 600px; overflow: hidden; }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 20px; right: 20px; width: 260px;
+    background: #1a1e24; border: 1px solid #2a3040;
+    border-radius: 8px; padding: 14px; z-index: 9999;
+    font-family: 'Barlow', sans-serif; font-size: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .tweaks-panel.visible { display: block; }
+  .tweaks-panel h4 { color: #e8a838; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .tweaks-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: #8a9ab0; }
+  .tweaks-row label { font-size: 11px; }
+  .tweaks-row input[type=range] { width: 100px; accent-color: #e8a838; }
+  .tweaks-row select { background: #0f1318; color: #c0ccd8; border: 1px solid #2a3040; border-radius: 4px; padding: 2px 6px; font-size: 11px; }
+  .tweaks-toggle { display: flex; gap: 4px; }
+  .tweaks-toggle button { padding: 3px 8px; border-radius: 4px; border: 1px solid #2a3040; background: #0f1318; color: #8a9ab0; cursor: pointer; font-size: 10px; }
+  .tweaks-toggle button.active { background: #e8a838; color: #0a0c0f; border-color: #e8a838; }
 </style>
 </head>
 <body>
-<div class="hdr">
-  <h1>🥚 Couveuse ESP32-P4</h1>
-  <div class="hright">
-    <span id="mqttSt">⚫ Connexion...</span>
-    <span class="timebar" id="tb">--:-- | --/--/----</span>
-  </div>
-</div>
-<div class="tabs">
-  <div class="tab t-mon active" onclick="ST('mon',this)">📊 Moniteur</div>
-  <div class="tab t-gfx" onclick="ST('gfx',this)">📈 Graphiques</div>
-  <div class="tab t-sta" onclick="ST('sta',this)">📋 Statistiques</div>
-  <div class="tab t-lum" onclick="ST('lum',this)">💡 Lumières</div>
-  <div class="tab t-wifi" onclick="ST('wifi',this)">📶 WiFi</div>
-</div>
+<div id="root"></div>
+<script type="text/babel">
 
-<!-- MONITEUR -->
-<div class="pane active" id="pane-mon">
-  <div class="grid">
-    <div class="card"><div class="lbl">TEMPÉRATURE</div><div class="val ok" id="vT">--°C</div><div class="sub">Cible: <span id="tT">--</span>°C</div></div>
-    <div class="card"><div class="lbl">HUMIDITÉ</div><div class="val ok" id="vH">--%</div><div class="sub">Cible: <span id="tH">--</span>%</div></div>
-    <div class="card"><div class="lbl">CO₂</div><div class="val" id="vC">-- ppm</div><div class="sub">Alarme: <span id="tC">--</span></div></div>
-  </div>
-  <h2 style="color:var(--blue)">⚡ ÉTAT</h2>
-  <div class="status-bar">
-    <span class="badge off" id="bHeat">🔥 CHAUF</span><span class="badge off" id="bHumid">💧 HUMIDIF</span>
-    <span class="badge on" id="bWater">💧 EAU</span><span class="badge on" id="bDoor">🚪 PORTE</span>
-    <span class="badge on" id="bSys">✅ SYSTÈME</span>
-  </div>
-  <div class="cnt-row">
-    <div class="cnt"><div class="cv" id="cHeat">--</div><div class="cl">Durée chauffage</div></div>
-    <div class="cnt"><div class="cv" id="cHumid">--</div><div class="cl">Durée humidificateur</div></div>
-    <div class="cnt"><div class="cv" id="cTurns">--</div><div class="cl">Retournements</div></div>
-  </div>
-  <h2 style="color:var(--blue)">⚙️ CIBLES</h2>
-  <div class="targets">
-    <div class="ti"><label>Temp (°C)</label><input type="number" id="iT" step="0.1" min="35" max="40"></div>
-    <div class="ti"><label>Hum (%)</label><input type="number" id="iH" step="1" min="30" max="80"></div>
-    <div class="ti"><label>CO2 alarme</label><input type="number" id="iC" step="100" min="1000" max="5000"></div>
-  </div>
-  <div class="btn-row">
-    <button class="btn btn-blue" onclick="sendTargets()">✅ Appliquer</button>
-    <span class="save-msg" id="smMon"></span>
-  </div>
-</div>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "dark",
+  "accentColor": "#e8a838",
+  "animateSensors": true,
+  "showCO2": true
+}/*EDITMODE-END*/;
 
-<!-- GRAPHIQUES -->
-<div class="pane" id="pane-gfx">
-  <div class="chart-title" style="color:var(--orange)">🌡 Température (°C) — 1h</div>
-  <canvas id="cT" height="110"></canvas>
-  <div class="chart-title" style="color:var(--blue);margin-top:12px">💧 Humidité (%) — 1h</div>
-  <canvas id="cH" height="110"></canvas>
-  <div class="chart-title" style="color:var(--green);margin-top:12px">🌿 CO₂ (ppm) — 1h</div>
-  <canvas id="cC" height="110"></canvas>
-  <div class="info" style="margin-top:10px">ℹ️ 120 points × 30s = 1h d'historique. Mis à jour à chaque message MQTT (toutes les 5s).</div>
-</div>
+// ─── COLOR PALETTE ───────────────────────────────────────────────
+const C = {
+  bg:       '#0a0c0f',
+  bgPanel:  '#0f1318',
+  bgCard:   '#141920',
+  border:   '#1e2630',
+  border2:  '#2a3848',
+  text:     '#d8e4f0',
+  textDim:  '#5a6e82',
+  textMid:  '#8a9ab0',
+  accent:   '#e8a838',
+  accentDim:'#a07020',
+  green:    '#38c878',
+  red:      '#e83838',
+  blue:     '#3898e8',
+  teal:     '#38c8c0',
+  orange:   '#e87828',
+  yellow:   '#e8d838',
+};
 
-<!-- STATISTIQUES -->
-<div class="pane" id="pane-sta">
-  <h2 style="color:var(--yellow)">📊 MIN / MAX</h2>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px">
-    <div class="card"><div class="lbl">T° MIN</div><div class="val" id="stTmin" style="color:var(--cyan)">--</div></div>
-    <div class="card"><div class="lbl">T° MAX</div><div class="val" id="stTmax" style="color:var(--red)">--</div></div>
-    <div class="card"><div class="lbl">HUM MIN</div><div class="val" id="stHmin" style="color:var(--cyan)">--</div></div>
-    <div class="card"><div class="lbl">HUM MAX</div><div class="val" id="stHmax" style="color:var(--red)">--</div></div>
-    <div class="card"><div class="lbl">CO₂ MIN</div><div class="val" id="stCmin" style="color:var(--green)">--</div></div>
-    <div class="card"><div class="lbl">CO₂ MAX</div><div class="val" id="stCmax" style="color:var(--red)">--</div></div>
-  </div>
-  <div class="cnt-row">
-    <div class="cnt"><div class="cv" id="stHeat">--</div><div class="cl">Durée chauffage total</div></div>
-    <div class="cnt"><div class="cv" id="stHumid">--</div><div class="cl">Durée humidificateur total</div></div>
-  </div>
-  <hr class="sep">
-  <h2 style="color:var(--yellow)">🚨 ALARMES</h2>
-  <div id="alarmEmpty" class="info">Aucune alarme enregistrée.</div>
-  <table class="stbl" id="alarmTbl" style="display:none">
-    <thead><tr><th>Type</th><th>Heure</th><th>Valeur</th><th>État</th></tr></thead>
-    <tbody id="alarmBody"></tbody>
-  </table>
-  <hr class="sep">
-  <h2 style="color:var(--red)">🔄 REDÉMARRAGES</h2>
-  <div id="rebootEmpty" class="info">Aucun redémarrage enregistré.</div>
-  <table class="stbl" id="rebootTbl" style="display:none">
-    <thead><tr><th>Cause</th><th>Date</th><th>Heure</th><th>Uptime avant</th></tr></thead>
-    <tbody id="rebootBody"></tbody>
-  </table>
-</div>
+// ─── ICONS (SVG inline) ───────────────────────────────────────────
+const Icon = ({ name, size=20, color=C.textMid }) => {
+  const icons = {
+    flame: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 8 6 8 11c0 2.2 1.8 4 4 4s4-1.8 4-4c0-1-.3-2-.8-2.8C14.5 9.5 14 11 12 11c0 0 1-3 0-5 0 0-1 2-2 3.5C9.4 10.7 9 11.8 9 13c0 1.7 1.3 3 3 3s3-1.3 3-3c0-3-3-11-3-11z" fill={color}/></svg>,
+    droplet: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 2L5.5 9.5C4 11.2 3 13.2 3 15c0 5 4 8 9 8s9-3 9-8c0-1.8-1-3.8-2.5-5.5L12 2z" fill={color}/></svg>,
+    wind: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M3 8h11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3M3 12h14c1.7 0 3 1.3 3 3s-1.3 3-3 3M3 16h7c1.7 0 3 1.3 3 3" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    egg: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="13" rx="7" ry="9" fill={color}/></svg>,
+    fan: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2" fill={color}/><path d="M12 2c0 0 2 4 2 7-1 0-2-1-2-1s-1 1-2 1c0-3 2-7 2-7zM22 12c0 0-4 2-7 2 0-1 1-2 1-2s-1-1-1-2c3 0 7 2 7 2zM12 22c0 0-2-4-2-7 1 0 2 1 2 1s1-1 2-1c0 3-2 7-2 7zM2 12c0 0 4-2 7-2 0 1-1 2-1 2s1 1 1 2c-3 0-7-2-7-2z" fill={color}/></svg>,
+    gear: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    water: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 2C6 8 4 12 4 15a8 8 0 0016 0c0-3-2-7-8-13z" fill={color}/><path d="M12 22v-4M8 18l2-2M16 18l-2-2" stroke="#0a0c0f" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+    door: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="3" y="2" width="18" height="20" rx="1" stroke={color} strokeWidth="2"/><circle cx="16" cy="12" r="1.5" fill={color}/></svg>,
+    motor: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="14" height="10" rx="2" stroke={color} strokeWidth="2"/><path d="M16 10h4l2 2-2 2h-4" stroke={color} strokeWidth="2" strokeLinecap="round"/><circle cx="9" cy="12" r="2" fill={color}/></svg>,
+    chart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><polyline points="2,18 8,10 12,14 16,6 22,10" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>,
+    alert: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M12 2L2 22h20L12 2z" stroke={color} strokeWidth="2" strokeLinejoin="round"/><path d="M12 9v5M12 17v1" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    wifi: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    lock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke={color} strokeWidth="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    light: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke={color} strokeWidth="2"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+    stats: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="2" y="16" width="4" height="6" fill={color}/><rect x="9" y="10" width="4" height="12" fill={color}/><rect x="16" y="4" width="4" height="18" fill={color}/></svg>,
+    menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2"/><path d="M8 12h8M12 8l4 4-4 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    back: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    trappe: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke={color} strokeWidth="2"/><path d="M2 12h20M12 6v12" stroke={color} strokeWidth="1.5" strokeDasharray="3 2"/></svg>,
+    calendar: <svg width={size} height={size} viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke={color} strokeWidth="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="2" strokeLinecap="round"/></svg>,
+  };
+  return icons[name] || <svg width={size} height={size} viewBox="0 0 24 24"/>;
+};
 
-<!-- LUMIERES -->
-<div class="pane" id="pane-lum">
-  <h2 style="color:var(--yellow)">💡 LUMIÈRES — Canaux PCA9685</h2>
-  <div class="lum-grid">
-    <div class="lum-card" id="lumCard8" onclick="C({light_cmd:'toggle_ch8'},'smLum')">
-      <div class="lum-icon">💡</div><div class="lum-name">Lumière 1</div>
-      <div class="lum-st" id="lumSt8">Canal 8 — ÉTEINT</div>
+// ─── ANIMATED FAN ────────────────────────────────────────────────
+const AnimatedFan = ({ speed=0, size=32, color=C.teal, running=true }) => {
+  const duration = running && speed > 0 ? Math.max(0.3, 2 - speed/60) : 99999;
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{overflow:'visible'}}>
+      {/* Glow ring when running */}
+      {running && speed > 0 && (
+        <circle cx="24" cy="24" r="20" fill="none" stroke={color} strokeWidth="1"
+          opacity="0.15" style={{filter:`drop-shadow(0 0 6px ${color})`}}/>
+      )}
+      {/* Spinning blades */}
+      <g style={{transformOrigin:'24px 24px', animation:running && speed>0 ? `spinFan ${duration}s linear infinite` : 'none'}}>
+        {/* 4 blades */}
+        {[0,90,180,270].map(angle => (
+          <g key={angle} style={{transformOrigin:'24px 24px', transform:`rotate(${angle}deg)`}}>
+            <path d="M24 24 C20 14 14 10 18 6 C22 2 28 8 24 24Z"
+              fill={color} opacity="0.85"
+              style={{filter: running && speed>0 ? `drop-shadow(0 0 3px ${color})` : 'none'}}/>
+          </g>
+        ))}
+        {/* Center hub */}
+        <circle cx="24" cy="24" r="4" fill={color} style={{filter:`drop-shadow(0 0 4px ${color}88)`}}/>
+        <circle cx="24" cy="24" r="2" fill="#0a0c0f"/>
+      </g>
+      {/* Speed arc */}
+      {speed > 0 && (() => {
+        const r=22, circ=2*Math.PI*r, arc=(speed/100)*circ*0.75;
+        return <circle cx="24" cy="24" r={r} fill="none" stroke={color} strokeWidth="2"
+          strokeDasharray={`${arc} ${circ}`} strokeDashoffset={circ*0.125}
+          opacity="0.3" strokeLinecap="round"
+          style={{transform:'rotate(135deg)',transformOrigin:'24px 24px'}}/>;
+      })()}
+    </svg>
+  );
+};
+
+// ─── ANIMATED TRAPPE ─────────────────────────────────────────────
+const AnimatedTrappe = ({ open=false, size=48, color=C.blue }) => {
+  const angle = open ? -70 : 0;
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{overflow:'visible'}}>
+      {/* Frame */}
+      <rect x="4" y="10" width="40" height="28" rx="3" fill="none" stroke={color} strokeWidth="1.5" opacity="0.4"/>
+      {/* Hinge dot left */}
+      <circle cx="8" cy="24" r="2" fill={color} opacity="0.7"/>
+      {/* Top flap */}
+      <g style={{transformOrigin:'8px 18px', transform:`rotate(${open?-angle:0}deg)`, transition:'transform 0.6s cubic-bezier(.4,2,.6,1)'}}>
+        <rect x="8" y="11" width="36" height="13" rx="2" fill={color} opacity="0.25" stroke={color} strokeWidth="1" />
+        <line x1="16" y1="17" x2="38" y2="17" stroke={color} strokeWidth="1" opacity="0.5"/>
+        <line x1="23" y1="13" x2="23" y2="23" stroke={color} strokeWidth="0.8" opacity="0.4"/>
+      </g>
+      {/* Bottom flap */}
+      <g style={{transformOrigin:'8px 30px', transform:`rotate(${open?angle:0}deg)`, transition:'transform 0.6s cubic-bezier(.4,2,.6,1)'}}>
+        <rect x="8" y="24" width="36" height="13" rx="2" fill={color} opacity="0.25" stroke={color} strokeWidth="1"/>
+        <line x1="16" y1="30" x2="38" y2="30" stroke={color} strokeWidth="1" opacity="0.5"/>
+        <line x1="31" y1="25" x2="31" y2="36" stroke={color} strokeWidth="0.8" opacity="0.4"/>
+      </g>
+      {/* Air flow arrows (visible when open) */}
+      {open && [16,24,32].map(x=>(
+        <g key={x} style={{animation:'airflow 1.2s ease-in-out infinite', animationDelay:`${x*0.03}s`}}>
+          <path d={`M${x} 42 L${x} 46`} stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+          <path d={`M${x-2} 44 L${x} 46 L${x+2} 44`} fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/>
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+// ─── ANIMATED FLAME ──────────────────────────────────────────────
+const AnimatedFlame = ({ active=false, size=28 }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" style={{overflow:'visible'}}>
+    {active && <ellipse cx="16" cy="26" rx="8" ry="3" fill={C.orange} opacity="0.15"
+      style={{animation:'flamePulse 0.8s ease-in-out infinite alternate'}}/>}
+    <g style={active ? {animation:'flameWobble 0.6s ease-in-out infinite alternate', transformOrigin:'16px 24px'} : {}}>
+      <path d="M16 4 C16 4 10 10 10 17 C10 21 13 24 16 24 C19 24 22 21 22 17 C22 10 16 4 16 4Z"
+        fill={active ? C.orange : C.textDim}
+        style={active ? {filter:`drop-shadow(0 0 8px ${C.orange})`} : {}}/>
+      <path d="M16 14 C16 14 13 17 13 20 C13 22 14.5 23 16 23 C17.5 23 19 22 19 20 C19 17 16 14 16 14Z"
+        fill={active ? C.yellow : '#2a3848'} opacity="0.9"/>
+    </g>
+  </svg>
+);
+
+// ─── ANIMATED DROPLET ────────────────────────────────────────────
+const AnimatedDroplet = ({ active=false, size=28 }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" style={{overflow:'visible'}}>
+    {active && [0,1,2].map(i=>(
+      <circle key={i} cx={10+i*6} cy="28" r="2" fill={C.blue} opacity="0"
+        style={{animation:`dropFall 1.4s ease-in infinite`, animationDelay:`${i*0.35}s`}}/>
+    ))}
+    <path d="M16 4 C10 11 7 16 7 20 C7 25 11 29 16 29 C21 29 25 25 25 20 C25 16 22 11 16 4Z"
+      fill={active ? C.blue : C.textDim}
+      style={active ? {filter:`drop-shadow(0 0 8px ${C.blue}88)`, animation:'dropPulse 1.5s ease-in-out infinite alternate'} : {}}/>
+    <ellipse cx="13" cy="17" rx="2.5" ry="4" fill="white" opacity="0.15" transform="rotate(-20 13 17)"/>
+  </svg>
+);
+
+// ─── GAUGE RING ───────────────────────────────────────────────────
+const GaugeRing = ({ value, min, max, color, size=110, strokeW=8 }) => {
+  const r = (size - strokeW*2) / 2;
+  const circ = 2 * Math.PI * r;
+  const pct = Math.min(1, Math.max(0, (value - min) / (max - min)));
+  const arcLen = pct * circ * 0.75;
+  const offset = circ * 0.125;
+  return (
+    <svg width={size} height={size} style={{transform:'rotate(135deg)'}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e2630" strokeWidth={strokeW} strokeDasharray={`${circ*0.75} ${circ*0.25}`} strokeDashoffset={-offset} strokeLinecap="round"/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={strokeW} strokeDasharray={`${arcLen} ${circ-arcLen}`} strokeDashoffset={-offset} strokeLinecap="round" style={{filter:`drop-shadow(0 0 6px ${color}88)`}}/>
+    </svg>
+  );
+};
+
+// ─── MINI SPARKLINE ───────────────────────────────────────────────
+const Sparkline = ({ data, color, w=80, h=28 }) => {
+  if (!data || data.length < 2) return null;
+  const mn = Math.min(...data), mx = Math.max(...data);
+  const rng = mx - mn || 1;
+  const pts = data.map((v,i) => `${(i/(data.length-1))*w},${h - ((v-mn)/rng)*h}`).join(' ');
+  return (
+    <svg width={w} height={h} style={{overflow:'visible'}}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{filter:`drop-shadow(0 0 3px ${color}66)`}}/>
+    </svg>
+  );
+};
+
+// ─── SENSOR CARD ─────────────────────────────────────────────────
+const SensorCard = ({ icon, label, value, unit, min, max, color, history, subLabel, subValue, alarm }) => {
+  const pct = Math.min(100, Math.max(0, ((value-min)/(max-min))*100));
+  return (
+    <div style={{
+      background: C.bgCard, border: `1px solid ${alarm ? color+'66' : C.border}`,
+      borderRadius: 10, padding: '14px 16px', flex: 1,
+      boxShadow: alarm ? `0 0 20px ${color}22, inset 0 0 20px ${color}08` : 'none',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {alarm && <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${color},transparent)`,animation:'pulse 1.5s infinite'}}/>}
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:10}}>
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+            <Icon name={icon} size={16} color={color}/>
+            <span style={{color:C.textDim,fontSize:11,letterSpacing:2,textTransform:'uppercase',fontFamily:'Barlow Condensed'}}>{label}</span>
+          </div>
+          <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+            <span style={{fontFamily:'Share Tech Mono',fontSize:44,color:color,lineHeight:1,textShadow:`0 0 20px ${color}88`}}>{typeof value==='number'?value.toFixed(value>100?0:1):value}</span>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:18,color:C.textDim,fontWeight:600}}>{unit}</span>
+          </div>
+        </div>
+        <div style={{position:'relative',width:110,height:110,marginTop:-8}}>
+          <GaugeRing value={value} min={min} max={max} color={color} size={110}/>
+          <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',marginTop:8}}>
+            <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:C.textDim}}>{min}</span>
+            <span style={{fontFamily:'Share Tech Mono',fontSize:9,color:C.textDim,marginTop:2}}>{max}</span>
+          </div>
+        </div>
+      </div>
+      {subLabel && <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+        <span style={{fontSize:10,color:C.textDim,letterSpacing:1}}>{subLabel}</span>
+        <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>{subValue}</span>
+      </div>}
+      <div style={{position:'relative',marginTop:4}}>
+        <LiveChart data={history} color={color} w={260} h={38} target={(min+max)/2} targetLabel={label==='CO2'?`${max}ppm`:`${(min+max)/2}${unit}`}/>
+        {label==='CO2' && <CO2Bubbles co2={value} active={true}/>}
+      </div>
+      <div style={{marginTop:6,display:'flex',alignItems:'center',gap:8}}>
+        <div style={{flex:1,height:3,background:C.border,borderRadius:2,overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:`linear-gradient(90deg,${color}88,${color})`,borderRadius:2,transition:'width 0.8s ease',boxShadow:`0 0 8px ${color}`}}/>
+        </div>
+        <span style={{fontFamily:'Share Tech Mono',fontSize:9,color:alarm?color:C.textDim,whiteSpace:'nowrap'}}>
+          {label==='CO2'?`<${max}${unit}`:`cible ${(min+max)/2}${unit}`}
+        </span>
+      </div>
     </div>
-    <div class="lum-card" id="lumCard9" onclick="C({light_cmd:'toggle_ch9'},'smLum')">
-      <div class="lum-icon">💡</div><div class="lum-name">Lumière 2</div>
-      <div class="lum-st" id="lumSt9">Canal 9 — ÉTEINT</div>
-    </div>
-    <div class="lum-card" id="lumCard10" onclick="C({light_cmd:'toggle_ch10'},'smLum')">
-      <div class="lum-icon">💡</div><div class="lum-name">Lumière 3</div>
-      <div class="lum-st" id="lumSt10">Canal 10 — ÉTEINT</div>
-    </div>
-    <div class="lum-card" id="lumCard11" onclick="C({light_cmd:'toggle_ch11'},'smLum')">
-      <div class="lum-icon">💡</div><div class="lum-name">Lumière 4</div>
-      <div class="lum-st" id="lumSt11">Canal 11 — ÉTEINT</div>
-    </div>
-  </div>
-  <div class="btn-row">
-    <button class="btn btn-yellow" onclick="C({light_cmd:'all_on'},'smLum','Toutes allumées')">💡 TOUT ALLUMER</button>
-    <button class="btn btn-gray" onclick="C({light_cmd:'all_off'},'smLum','Toutes éteintes')">🌑 TOUT ÉTEINDRE</button>
-    <span class="save-msg" id="smLum"></span>
-  </div>
-</div>
+  );
+};
 
-<!-- WIFI -->
-<div class="pane" id="pane-wifi">
-  <h2 style="color:var(--blue)">📶 STATUT WIFI</h2>
-  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:8px 0">
-    <div class="card"><div class="lbl">RÉSEAU CONNECTÉ</div><div class="val" id="wSsid" style="font-size:.9em;color:var(--green)">---</div></div>
-    <div class="card"><div class="lbl">ADRESSE IP</div><div class="val" id="wIp" style="font-size:.9em;color:var(--cyan)">---</div></div>
-  </div>
-  <div id="wStatus" style="background:#0d1a0d;border:1px solid #1a3a1a;border-radius:8px;padding:8px 12px;margin:7px 0;font-size:.78em;color:#aaa">⏳ Récupération du statut WiFi...</div>
-
-  <hr class="sep">
-  <h2 style="color:var(--blue)">🔑 CONNECTER UN RÉSEAU</h2>
-  <div class="info warn">ℹ️ Entrez le nom et le mot de passe de votre réseau WiFi. L'ESP32 se connectera et mémorisera le réseau même après redémarrage.</div>
-
-  <div style="margin:14px 0;display:flex;flex-direction:column;gap:10px;max-width:420px">
-    <div class="ti">
-      <label>Nom du réseau (SSID)</label>
-      <input type="text" id="wfSsid" placeholder="NomDuReseau" autocomplete="off" autocapitalize="none"
-             style="width:100%;background:#111;color:#fff;border:1px solid var(--blue);border-radius:8px;padding:8px 12px;font-size:.95em">
+// ─── STATUS BAR ──────────────────────────────────────────────────
+const StatusBar = ({ heat, humid, water, door, system, fan }) => {
+  const items = [
+    { label:'CHAUFFAGE', active:heat,  color:C.orange, anim:<AnimatedFlame active={heat} size={22}/> },
+    { label:'HUMIDIF.',  active:humid, color:C.blue,   anim:<AnimatedDroplet active={humid} size={22}/> },
+    { label:'EAU',       active:!water,color:C.teal,   icon:'water' },
+    { label:'PORTE',     active:!door, color:C.green,  icon:'door' },
+    { label:'SYSTEME',   active:system,color:C.green,  icon:'check' },
+  ];
+  return (
+    <div style={{display:'flex',gap:4,padding:'4px 10px',background:C.bgPanel,borderTop:`1px solid ${C.border}`,height:44}}>
+      {items.map(it => (
+        <div key={it.label} style={{
+          flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:5,
+          background: it.active ? `${it.color}18` : `${C.red}18`,
+          border:`1px solid ${it.active ? it.color+'44' : C.red+'44'}`,
+          borderRadius:6,padding:'3px 6px',
+        }}>
+          {it.anim
+            ? <div style={{width:22,height:22,display:'flex',alignItems:'center',justifyContent:'center'}}>{it.anim}</div>
+            : <div style={{width:6,height:6,borderRadius:'50%',background:it.active?it.color:C.red,boxShadow:`0 0 6px ${it.active?it.color:C.red}`}}/>
+          }
+          <span style={{fontSize:9,letterSpacing:1.5,color:it.active?it.color:C.red,fontFamily:'Barlow Condensed',fontWeight:700}}>{it.label}</span>
+        </div>
+      ))}
+      {/* Ventilateur animé dans la barre d'état */}
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6,background:`${C.teal}18`,border:`1px solid ${C.teal}44`,borderRadius:6,padding:'3px 6px'}}>
+        <AnimatedFan speed={fan} size={22} color={C.teal} running={fan>0}/>
+        <span style={{fontSize:9,letterSpacing:1.5,color:C.teal,fontFamily:'Barlow Condensed',fontWeight:700}}>{fan}%</span>
+      </div>
     </div>
-    <div class="ti">
-      <label>Mot de passe</label>
-      <div style="position:relative">
-        <input type="password" id="wfPass" placeholder="Mot de passe WiFi" autocomplete="off"
-               style="width:100%;background:#111;color:#fff;border:1px solid var(--blue);border-radius:8px;padding:8px 40px 8px 12px;font-size:.95em">
-        <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray);font-size:1.1em">👁</span>
+  );
+};
+
+// ─── SHORTCUT PANEL (bottom right) ───────────────────────────────
+const ShortcutPanel = ({ turnCount, turnRemaining, motorDir, servoOpen, fanSpeed, day, onNavigate }) => {
+  const mins = Math.floor(turnRemaining / 60);
+  const secs = turnRemaining % 60;
+  return (
+    <div style={{
+      background:C.bgCard,border:`1px solid ${C.border}`,
+      borderRadius:10,padding:'10px 12px',display:'flex',flexDirection:'column',gap:8
+    }}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,paddingBottom:6,marginBottom:2}}>
+        <span style={{fontSize:9,letterSpacing:2,color:C.textDim,fontFamily:'Barlow Condensed'}}>RACCOURCIS</span>
+        <Icon name="motor" size={13} color={C.accentDim}/>
+      </div>
+
+      {/* Retournement */}
+      <div style={{cursor:'pointer'}} onClick={()=>onNavigate('motor')}>
+        <div style={{fontSize:9,color:C.textDim,letterSpacing:1,marginBottom:3}}>RETOURNEMENT</div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:16,color:C.accent}}>{turnCount}×</span>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>{String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}</span>
+        </div>
+        {/* Mini motor bar */}
+        <div style={{display:'flex',gap:2,marginTop:4}}>
+          {Array.from({length:16},(_,i)=>(
+            <div key={i} style={{flex:1,height:4,borderRadius:1,background: motorDir==='LEFT' ? (i<8?C.accent:C.border) : motorDir==='RIGHT' ? (i>=8?C.accent:C.border) : C.border}}/>
+          ))}
+        </div>
+      </div>
+
+      {/* Ventilo + Trappe */}
+      <div style={{display:'flex',gap:6}}>
+        <div style={{flex:1,background:C.bgPanel,borderRadius:6,padding:'6px 8px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:2}} onClick={()=>onNavigate('fan')}>
+          <AnimatedFan speed={fanSpeed} size={34} color={C.teal} running={fanSpeed>0}/>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.teal}}>{fanSpeed}%</span>
+        </div>
+        <div style={{flex:1,background:C.bgPanel,borderRadius:6,padding:'6px 4px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:2}} onClick={()=>onNavigate('trappe')}>
+          <AnimatedTrappe open={servoOpen} size={36} color={C.blue}/>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:10,color:servoOpen?C.green:C.textMid}}>{servoOpen?'OUVERTE':'FERMÉE'}</span>
+        </div>
+      </div>
+
+      {/* Jour incubation */}
+      <div style={{background:`${C.accent}15`,border:`1px solid ${C.accent}33`,borderRadius:6,padding:'6px 8px',cursor:'pointer'}} onClick={()=>onNavigate('stats')}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div>
+            <div style={{fontSize:9,color:C.accentDim,marginBottom:1}}>INCUBATION</div>
+            <span style={{fontFamily:'Share Tech Mono',fontSize:18,color:C.accent}}>J{day}</span>
+            <span style={{fontSize:9,color:C.accentDim,marginLeft:4}}>/ 21</span>
+          </div>
+          <div style={{width:32,height:32}}>
+            <svg viewBox="0 0 32 32">
+              <circle cx="16" cy="16" r="13" fill="none" stroke="#1e2630" strokeWidth="3"/>
+              <circle cx="16" cy="16" r="13" fill="none" stroke={C.accent} strokeWidth="3"
+                strokeDasharray={`${(day/21)*81.7} 100`} strokeDashoffset="20.4"
+                strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${C.accent})`}}/>
+            </svg>
+          </div>
+        </div>
+        {/* Progress bar jours */}
+        <div style={{marginTop:4,height:2,background:C.border,borderRadius:1}}>
+          <div style={{height:'100%',width:`${(day/21)*100}%`,background:C.accent,borderRadius:1}}/>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── TOP BAR ─────────────────────────────────────────────────────
+const TopBar = ({ time, date, wifi, onMenu, alarm }) => (
+  <div style={{
+    display:'flex',alignItems:'center',justifyContent:'space-between',
+    padding:'8px 16px',background:C.bgPanel,borderBottom:`1px solid ${C.border}`,height:46
+  }}>
+    <div style={{display:'flex',alignItems:'center',gap:12}}>
+      {/* Egg logo */}
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        <div style={{width:28,height:28,background:`${C.accent}20`,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.accent}44`}}>
+          <Icon name="egg" size={16} color={C.accent}/>
+        </div>
+        <div>
+          <div style={{fontFamily:'Barlow Condensed',fontSize:14,fontWeight:700,color:C.text,letterSpacing:2}}>COUVEUSE AUTO</div>
+          <div style={{fontSize:9,color:C.textDim,letterSpacing:1}}>ESP32-P4 · v3.7</div>
+        </div>
+      </div>
+    </div>
+    <div style={{display:'flex',alignItems:'center',gap:16}}>
+      <div style={{textAlign:'center'}}>
+        <div style={{fontFamily:'Share Tech Mono',fontSize:20,color:C.text,letterSpacing:2}}>{time}</div>
+        <div style={{fontSize:9,color:C.textDim,letterSpacing:1}}>{date}</div>
+      </div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <Icon name="wifi" size={16} color={wifi?C.green:C.textDim}/>
+        {alarm && <div style={{display:'flex',alignItems:'center',gap:4,padding:'3px 8px',background:`${C.red}20`,border:`1px solid ${C.red}44`,borderRadius:4}}>
+          <Icon name="alert" size={12} color={C.red}/>
+          <span style={{fontSize:9,color:C.red,letterSpacing:1}}>ALARME</span>
+        </div>}
+        <button onClick={onMenu} style={{
+          display:'flex',alignItems:'center',gap:6,padding:'6px 12px',
+          background:`${C.accent}20`,border:`1px solid ${C.accent}44`,
+          borderRadius:6,cursor:'pointer',color:C.accent,fontFamily:'Barlow Condensed',
+          fontSize:12,fontWeight:600,letterSpacing:1
+        }}>
+          <Icon name="menu" size={14} color={C.accent}/>
+          MENU
+        </button>
       </div>
     </div>
   </div>
+);
 
-  <div class="btn-row">
-    <button class="btn btn-blue" onclick="wifiConnect()">🔗 Se connecter</button>
-    <button class="btn btn-gray" onclick="wifiForget()">🗑 Oublier le réseau</button>
-    <span class="save-msg" id="smWifi"></span>
+// ─── MENU POPUP ──────────────────────────────────────────────────
+const MenuPopup = ({ onClose, onNavigate }) => {
+  const items = [
+    { id:'settings',  label:'RÉGLAGES',    icon:'gear',     color:C.accent },
+    { id:'targets',   label:'CIBLES',      icon:'calendar', color:C.orange },
+    { id:'motor',     label:'MOTEUR',      icon:'motor',    color:C.orange },
+    { id:'fan',       label:'VENTILATEUR', icon:'fan',      color:C.teal },
+    { id:'stats',     label:'STATISTIQUES',icon:'stats',    color:C.green },
+    { id:'graph',     label:'GRAPHIQUES',  icon:'chart',    color:C.yellow },
+    { id:'calib',     label:'CALIBRATION', icon:'check',    color:C.teal },
+    { id:'wifi',      label:'WIFI & WEB',  icon:'wifi',     color:C.blue },
+    { id:'lights',    label:'LUMIÈRES',    icon:'light',    color:C.yellow },
+    { id:'reboot_log',label:'REBOOTS',     icon:'alert',    color:C.red },
+  ];
+  return (
+    <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
+      <div style={{background:C.bgPanel,border:`1px solid ${C.border2}`,borderRadius:14,padding:20,width:520,boxShadow:'0 20px 60px rgba(0,0,0,0.8)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>NAVIGATION</span>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:C.textDim,fontSize:20,lineHeight:1}}>✕</button>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+          {items.map(it=>(
+            <button key={it.id} onClick={()=>{onNavigate(it.id);onClose();}} style={{
+              display:'flex',alignItems:'center',gap:12,padding:'14px 16px',
+              background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,
+              cursor:'pointer',textAlign:'left',
+              transition:'all 0.15s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=it.color+'88';e.currentTarget.style.background=`${it.color}10`}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.bgCard}}>
+              <div style={{width:36,height:36,borderRadius:8,background:`${it.color}18`,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${it.color}33`}}>
+                <Icon name={it.icon} size={18} color={it.color}/>
+              </div>
+              <span style={{fontFamily:'Barlow Condensed',fontSize:14,color:C.text,letterSpacing:2,fontWeight:600}}>{it.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── SETTINGS SCREEN ─────────────────────────────────────────────
+const SettingsScreen = ({ onBack, params, setParams }) => {
+  const [tab, setTab] = React.useState('regulation');
+  const [pinInput, setPinInput] = React.useState('');
+  const [unlocked, setUnlocked] = React.useState(false);
+
+  const tabs = [
+    {id:'regulation',label:'RÉGULATION'},
+    {id:'incubation',label:'INCUBATION'},
+    {id:'alertes',label:'ALERTES'},
+    {id:'systeme',label:'SYSTÈME'},
+  ];
+
+  const Row = ({ label, children }) => (
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:`1px solid ${C.border}`}}>
+      <span style={{fontSize:12,color:C.textMid,letterSpacing:1}}>{label}</span>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>{children}</div>
+    </div>
+  );
+  const NumControl = ({ value, onChange, step=0.1, unit='' }) => (
+    <div style={{display:'flex',alignItems:'center',gap:8}}>
+      <button onClick={()=>onChange(+(value-step).toFixed(1))} style={{width:28,height:28,borderRadius:6,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:16}}>−</button>
+      <span style={{fontFamily:'Share Tech Mono',fontSize:16,color:C.accent,minWidth:60,textAlign:'center'}}>{typeof value==='number'?value.toFixed(1):value}{unit}</span>
+      <button onClick={()=>onChange(+(value+step).toFixed(1))} style={{width:28,height:28,borderRadius:6,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:16}}>+</button>
+    </div>
+  );
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>RÉGLAGES</span>
+        {!unlocked && <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
+          <Icon name="lock" size={14} color={C.accentDim}/>
+          <span style={{fontSize:10,color:C.accentDim}}>PIN requis pour modifier</span>
+        </div>}
+      </div>
+      <div style={{display:'flex',gap:0,padding:'0 16px',background:C.bgPanel,borderBottom:`1px solid ${C.border}`}}>
+        {tabs.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{
+            padding:'8px 16px',background:'none',border:'none',cursor:'pointer',
+            fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,
+            color:tab===t.id?C.accent:C.textDim,
+            borderBottom:tab===t.id?`2px solid ${C.accent}`:'2px solid transparent',
+          }}>{t.label}</button>
+        ))}
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'0 16px'}}>
+        {!unlocked ? (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:16}}>
+            <Icon name="lock" size={40} color={C.accentDim}/>
+            <span style={{color:C.textMid,fontSize:13}}>Entrez le code PIN pour accéder aux réglages</span>
+            <div style={{display:'flex',gap:8}}>
+              {[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((k,i)=>(
+                <button key={i} onClick={()=>{
+                  if(k==='⌫') setPinInput(p=>p.slice(0,-1));
+                  else if(k!=='') setPinInput(p=>(p+k).slice(0,4));
+                  if(typeof k==='number' && (pinInput+k).length===4) {
+                    if((pinInput+k)==='1234') setUnlocked(true);
+                    else setPinInput('');
+                  }
+                }} style={{width:44,height:44,borderRadius:8,background:C.bgCard,border:`1px solid ${C.border}`,color:C.text,cursor:k===''?'default':'pointer',fontSize:16,fontFamily:'Share Tech Mono'}}>
+                  {k}
+                </button>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              {[0,1,2,3].map(i=><div key={i} style={{width:10,height:10,borderRadius:'50%',background:i<pinInput.length?C.accent:C.border}}/>)}
+            </div>
+          </div>
+        ) : tab==='regulation' ? (
+          <div>
+            <Row label="Température cible"><NumControl value={params.tempTarget} onChange={v=>setParams(p=>({...p,tempTarget:v}))} step={0.1} unit="°C"/></Row>
+            <Row label="Marge chauffage ±"><NumControl value={params.tempMargin} onChange={v=>setParams(p=>({...p,tempMargin:v}))} step={0.1} unit="°C"/></Row>
+            <Row label="Humidité cible"><NumControl value={params.humTarget} onChange={v=>setParams(p=>({...p,humTarget:v}))} step={1} unit="%"/></Row>
+            <Row label="Marge humidificateur ±"><NumControl value={params.humMargin} onChange={v=>setParams(p=>({...p,humMargin:v}))} step={1} unit="%"/></Row>
+            <Row label="Seuil alarme CO2"><NumControl value={params.co2Max} onChange={v=>setParams(p=>({...p,co2Max:v}))} step={100} unit="ppm"/></Row>
+          </div>
+        ) : tab==='incubation' ? (
+          <div>
+            <Row label="Durée incubation"><NumControl value={params.duration} onChange={v=>setParams(p=>({...p,duration:v}))} step={1} unit="j"/></Row>
+            <Row label="Intervalle retournement"><NumControl value={params.turnInterval} onChange={v=>setParams(p=>({...p,turnInterval:v}))} step={5} unit="min"/></Row>
+            <Row label="Début phase éclosion"><NumControl value={params.eclosionDay} onChange={v=>setParams(p=>({...p,eclosionDay:v}))} step={1} unit="J"/></Row>
+            <Row label="Humidité éclosion"><NumControl value={params.humEclosion} onChange={v=>setParams(p=>({...p,humEclosion:v}))} step={1} unit="%"/></Row>
+            <Row label="Durée trajet moteur"><NumControl value={params.motorMs/1000} onChange={v=>setParams(p=>({...p,motorMs:v*1000}))} step={0.5} unit="s"/></Row>
+          </div>
+        ) : tab==='alertes' ? (
+          <div>
+            <Row label="Telegram activé">
+              <div onClick={()=>setParams(p=>({...p,telegram:!p.telegram}))} style={{width:44,height:24,borderRadius:12,background:params.telegram?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                <div style={{position:'absolute',top:3,left:params.telegram?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+              </div>
+            </Row>
+            <Row label="Alerte CO2 dépassé">
+              <div onClick={()=>setParams(p=>({...p,alertCO2:!p.alertCO2}))} style={{width:44,height:24,borderRadius:12,background:params.alertCO2?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                <div style={{position:'absolute',top:3,left:params.alertCO2?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+              </div>
+            </Row>
+            <Row label="Screensaver">
+              <select value={params.screensaver} onChange={e=>setParams(p=>({...p,screensaver:e.target.value}))} style={{background:C.bgCard,color:C.text,border:`1px solid ${C.border}`,borderRadius:6,padding:'4px 8px',fontFamily:'Barlow Condensed',fontSize:12}}>
+                <option value="5s">5 secondes</option><option value="5min">5 minutes</option><option value="20min">20 minutes</option><option value="off">OFF</option>
+              </select>
+            </Row>
+          </div>
+        ) : (
+          <div>
+            <Row label="Firmware"><span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>v3.7 / 2025</span></Row>
+            <Row label="Uptime"><span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>3j 14h 22m</span></Row>
+            <Row label="Mémoire libre"><span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>218 Ko</span></Row>
+            <Row label="I2C SHT45"><span style={{fontSize:11,color:C.green}}>● OK (0x44)</span></Row>
+            <Row label="I2C SCD41"><span style={{fontSize:11,color:C.green}}>● OK (0x62)</span></Row>
+            <Row label="PCA9685"><span style={{fontSize:11,color:C.green}}>● OK (0x40)</span></Row>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── MOTOR SCREEN ────────────────────────────────────────────────
+const MotorScreen = ({ onBack, state }) => {
+  const [dir, setDir] = React.useState('STOP');
+  const [running, setRunning] = React.useState(false);
+  const pos = dir==='LEFT' ? 20 : dir==='RIGHT' ? 80 : 50;
+
+  const startMotor = (d) => {
+    setDir(d); setRunning(true);
+    setTimeout(()=>{setRunning(false);setDir('STOP');},3000);
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>MOTEUR RETOURNEMENT</span>
+      </div>
+      <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,padding:16}}>
+        {/* Left: visual */}
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        {/* Egg tray visual */}
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:20,flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
+            <span style={{fontSize:10,color:C.textDim,letterSpacing:2}}>PLATEAU RETOURNEMENT</span>
+            <div style={{position:'relative',width:220,height:130}}>
+              {/* Support bars */}
+              <div style={{position:'absolute',top:'50%',left:8,width:6,height:70,background:C.border,borderRadius:3,transform:'translateY(-50%)'}}/>
+              <div style={{position:'absolute',top:'50%',right:8,width:6,height:70,background:C.border,borderRadius:3,transform:'translateY(-50%)'}}/>
+              {/* Tray */}
+              <div style={{
+                position:'absolute',top:'50%',left:'50%',
+                width:190,height:64,
+                transform:`translate(-50%,-50%) rotate(${running?(dir==='LEFT'?-25:25):0}deg)`,
+                background:`linear-gradient(135deg,${C.bgCard},${C.bgPanel})`,
+                border:`2px solid ${running?C.accent:C.border}`,borderRadius:12,
+                display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                transition:'transform 0.7s cubic-bezier(.4,2,.6,1)',
+                boxShadow: running ? `0 0 18px ${C.accent}44` : 'none',
+              }}>
+                {[0,1,2,3,4,5,6].map(i=>(
+                  <div key={i} style={{
+                    display:'flex',flexDirection:'column',alignItems:'center',gap:1,
+                    animation: running ? `eggRock 0.5s ease-in-out infinite` : 'none',
+                    animationDelay: `${i*0.06}s`,
+                  }}>
+                    <svg width="16" height="22" viewBox="0 0 16 22">
+                      <ellipse cx="8" cy="13" rx="6.5" ry="8.5" fill={running?C.accent:C.textDim} opacity={running?0.9:0.5}
+                        style={running?{filter:`drop-shadow(0 0 4px ${C.accent}66)`}:{}}/>
+                      <ellipse cx="6" cy="10" rx="2" ry="3.5" fill="white" opacity="0.12" transform="rotate(-20 6 10)"/>
+                    </svg>
+                  </div>
+                ))}
+              </div>
+              {/* Motion arrows */}
+              {running && <>
+                <div style={{position:'absolute',top:'50%',left:20,transform:'translateY(-50%)',opacity:dir==='LEFT'?1:0.15,transition:'opacity 0.3s'}}>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:22,color:C.orange,textShadow:`0 0 10px ${C.orange}`}}>←</span>
+                </div>
+                <div style={{position:'absolute',top:'50%',right:20,transform:'translateY(-50%)',opacity:dir==='RIGHT'?1:0.15,transition:'opacity 0.3s'}}>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:22,color:C.orange,textShadow:`0 0 10px ${C.orange}`}}>→</span>
+                </div>
+              </>}
+            </div>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <span style={{fontFamily:'Share Tech Mono',fontSize:10,color:C.textDim}}>GAUCHE</span>
+              <div style={{width:120,height:4,background:C.border,borderRadius:2,position:'relative'}}>
+                <div style={{position:'absolute',top:-3,left:`${pos}%`,width:10,height:10,borderRadius:'50%',background:running?C.orange:C.accent,transform:'translateX(-50%)',transition:'left 0.4s ease',boxShadow:`0 0 8px ${running?C.orange:C.accent}`}}/>
+              </div>
+              <span style={{fontFamily:'Share Tech Mono',fontSize:10,color:C.textDim}}>DROITE</span>
+            </div>
+            {/* Status label */}
+            <div style={{fontSize:10,color:running?C.orange:C.textDim,letterSpacing:2,fontFamily:'Barlow Condensed',fontWeight:700}}>
+              {running ? `EN COURS — ${dir==='LEFT'?'GAUCHE':'DROITE'}` : 'EN ATTENTE'}
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+            {[
+              {label:'RETOURNEMENTS',val:`${state.turnCount}×`,color:C.accent},
+              {label:'DERNIER',val:'02:34',color:C.textMid},
+              {label:'PROCHAIN',val:`${String(Math.floor(state.turnRemaining/60)).padStart(2,'0')}:${String(state.turnRemaining%60).padStart(2,'0')}`,color:C.orange},
+            ].map(s=>(
+              <div key={s.label} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 8px',textAlign:'center'}}>
+                <div style={{fontSize:8,color:C.textDim,letterSpacing:1,marginBottom:4}}>{s.label}</div>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:16,color:s.color}}>{s.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Right: controls */}
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>CONTRÔLE MANUEL</div>
+            <div style={{display:'flex',gap:8,marginBottom:12}}>
+              <button onClick={()=>startMotor('LEFT')} disabled={running} style={{flex:1,padding:'14px 0',borderRadius:8,background:dir==='LEFT'?`${C.orange}30`:C.bgPanel,border:`1px solid ${dir==='LEFT'?C.orange:C.border}`,color:dir==='LEFT'?C.orange:C.textMid,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:13,letterSpacing:2,fontWeight:700}}>← GAUCHE</button>
+              <button onClick={()=>startMotor('RIGHT')} disabled={running} style={{flex:1,padding:'14px 0',borderRadius:8,background:dir==='RIGHT'?`${C.orange}30`:C.bgPanel,border:`1px solid ${dir==='RIGHT'?C.orange:C.border}`,color:dir==='RIGHT'?C.orange:C.textMid,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:13,letterSpacing:2,fontWeight:700}}>DROITE →</button>
+            </div>
+            <button onClick={()=>{setDir('STOP');setRunning(false);}} style={{width:'100%',padding:'10px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2,fontWeight:700}}>■ STOP</button>
+          </div>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16,flex:1}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>PARAMÈTRES</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {[
+                {label:'Intervalle',val:'60 min'},
+                {label:'Durée trajet',val:'5.0 s'},
+                {label:'Position actuelle',val:dir==='LEFT'?'GAUCHE':dir==='RIGHT'?'DROITE':'CENTRE'},
+              ].map(r=>(
+                <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,paddingBottom:8}}>
+                  <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.accent}}>{r.val}</span>
+                </div>
+              ))}
+              <button style={{marginTop:6,padding:'10px 0',borderRadius:8,background:`${C.teal}15`,border:`1px solid ${C.teal}44`,color:C.teal,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>LANCER TEST AUTOMATIQUE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── STATS SCREEN ────────────────────────────────────────────────
+const StatsScreen = ({ onBack, state }) => {
+  const [tab, setTab] = React.useState('bilan');
+  const alarms = [
+    {type:'T> MAX',time:'08:32',val:'38.4°C',active:false},
+    {type:'PORTE OUV',time:'07:15',val:'—',active:false},
+    {type:'T< MIN',time:'06:44',val:'36.2°C',active:false},
+    {type:'MANQ.EAU',time:'Hier',val:'—',active:false},
+  ];
+  const SimpleGraph = ({ data, color, label, unit }) => {
+    const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
+    const w=240, h=80;
+    const pts=data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/rng)*(h-10)+5}`).join(' ');
+    return (
+      <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+          <span style={{fontSize:10,color:C.textDim,letterSpacing:1}}>{label}</span>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:11,color}}>min:{mn.toFixed(1)} max:{mx.toFixed(1)}{unit}</span>
+        </div>
+        <svg width={w} height={h} style={{overflow:'visible'}}>
+          <defs><linearGradient id={`g${label}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.3"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient></defs>
+          <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#g${label})`}/>
+          <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>STATISTIQUES</span>
+        <div style={{display:'flex',gap:0,marginLeft:'auto'}}>
+          {['bilan','graphes','alarmes'].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{padding:'4px 14px',background:'none',border:'none',cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,color:tab===t?C.accent:C.textDim,borderBottom:tab===t?`2px solid ${C.accent}`:'2px solid transparent',textTransform:'uppercase'}}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:16}}>
+        {tab==='bilan' && (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+            {[
+              {label:'JOUR INCUBATION',val:`J${state.day}`,sub:'/ 21 jours',color:C.accent},
+              {label:'RETOURNEMENTS',val:`${state.turnCount}×`,sub:'depuis début',color:C.orange},
+              {label:'TAUX CHAUFFE',val:'68%',sub:'du temps',color:C.orange},
+              {label:'TAUX HUMIDIF.',val:'32%',sub:'du temps',color:C.blue},
+              {label:'T° MINIMUM',val:`${state.tempMin}°C`,sub:'enregistrée',color:C.teal},
+              {label:'T° MAXIMUM',val:`${state.tempMax}°C`,sub:'enregistrée',color:C.red},
+              {label:'HR MINIMUM',val:`${state.humMin}%`,sub:'enregistrée',color:C.blue},
+              {label:'HR MAXIMUM',val:`${state.humMax}%`,sub:'enregistrée',color:C.teal},
+              {label:'CO2 MINIMUM',val:'412ppm',sub:'enregistré',color:C.green},
+              {label:'CO2 MAXIMUM',val:'1842ppm',sub:'enregistré',color:C.yellow},
+              {label:'MIRAGE J7',val:'12/04',sub:'Fécondité OK',color:C.green},
+              {label:'ÉCLOSION PRÉVUE',val:'30/04',sub:'dans 9 jours',color:C.accent},
+            ].map(s=>(
+              <div key={s.label} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 12px'}}>
+                <div style={{fontSize:8,color:C.textDim,letterSpacing:1,marginBottom:4}}>{s.label}</div>
+                <div style={{fontFamily:'Share Tech Mono',fontSize:20,color:s.color}}>{s.val}</div>
+                <div style={{fontSize:9,color:C.textDim,marginTop:2}}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {tab==='graphes' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <SimpleGraph data={state.tempHistory} color={C.orange} label="TEMPÉRATURE" unit="°C"/>
+            <SimpleGraph data={state.humHistory} color={C.blue} label="HUMIDITÉ" unit="%"/>
+            <SimpleGraph data={state.co2History} color={C.teal} label="CO2" unit="ppm"/>
+            <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:12}}>
+              <div style={{fontSize:10,color:C.textDim,letterSpacing:1,marginBottom:8}}>DURÉES ACTIONNEURS</div>
+              {[
+                {label:'Chauffage',val:'34h 12m',color:C.orange,pct:68},
+                {label:'Humidificateur',val:'16h 04m',color:C.blue,pct:32},
+                {label:'Ventilateur',val:'48h 00m',color:C.teal,pct:96},
+              ].map(r=>(
+                <div key={r.label} style={{marginBottom:10}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                    <span style={{fontSize:10,color:C.textMid}}>{r.label}</span>
+                    <span style={{fontFamily:'Share Tech Mono',fontSize:10,color:r.color}}>{r.val}</span>
+                  </div>
+                  <div style={{height:4,background:C.border,borderRadius:2}}>
+                    <div style={{height:'100%',width:`${r.pct}%`,background:r.color,borderRadius:2}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab==='alarmes' && (
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {alarms.map((a,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:12,background:C.bgCard,border:`1px solid ${a.active?C.red+'44':C.border}`,borderRadius:8,padding:'10px 14px'}}>
+                <Icon name="alert" size={16} color={a.active?C.red:C.textDim}/>
+                <span style={{fontFamily:'Barlow Condensed',fontSize:13,color:a.active?C.red:C.text,letterSpacing:1,minWidth:100}}>{a.type}</span>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:C.textDim,minWidth:60}}>{a.time}</span>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.textMid}}>{a.val}</span>
+                <div style={{marginLeft:'auto',fontSize:9,color:a.active?C.red:C.green}}>{a.active?'● ACTIF':'● RÉSOLU'}</div>
+              </div>
+            ))}
+            <div style={{marginTop:8,padding:'10px 14px',background:`${C.green}10`,border:`1px solid ${C.green}33`,borderRadius:8,display:'flex',gap:8,alignItems:'center'}}>
+              <Icon name="check" size={14} color={C.green}/>
+              <span style={{fontSize:11,color:C.green}}>Aucune alarme active — système nominal</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── FAN SCREEN ──────────────────────────────────────────────────
+const FanScreen = ({ onBack, state, setState }) => {
+  const [mode, setMode] = React.useState('auto');
+  const [manSpeed, setManSpeed] = React.useState(state.fan);
+  const [trappeOpen, setTrappeOpen] = React.useState(false);
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>VENTILATEUR + TRAPPE</span>
+      </div>
+      <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,padding:16}}>
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:20,flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16}}>
+            <span style={{fontSize:10,color:C.textDim,letterSpacing:2}}>VITESSE VENTILATEUR</span>
+            <div style={{position:'relative',width:150,height:150}}>
+              <GaugeRing value={manSpeed} min={0} max={100} color={C.teal} size={150} strokeW={10}/>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <AnimatedFan speed={manSpeed} size={70} color={C.teal} running={mode!=='off' && manSpeed>0}/>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:20,color:C.teal,marginTop:2,textShadow:`0 0 12px ${C.teal}`}}>{manSpeed}<span style={{fontSize:12,color:C.textDim}}>%</span></span>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={()=>setManSpeed(Math.max(0,manSpeed-10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>−</button>
+              <button onClick={()=>setManSpeed(Math.min(100,manSpeed+10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>+</button>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            {['auto','manuel','off'].map(m=>(
+              <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:'10px 0',borderRadius:8,background:mode===m?`${C.teal}20`:C.bgCard,border:`1px solid ${mode===m?C.teal:C.border}`,color:mode===m?C.teal:C.textMid,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:1,fontWeight:700,textTransform:'uppercase'}}>{m}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>TRAPPE AÉRATION</div>
+            <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:12}}>
+              <AnimatedTrappe open={trappeOpen} size={72} color={C.blue}/>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:'Share Tech Mono',fontSize:16,color:trappeOpen?C.green:C.textMid,marginBottom:6}}>
+                  {trappeOpen ? '▲ OUVERTE' : '▬ FERMÉE'}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button onClick={()=>setTrappeOpen(true)} style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>OUVRIR</button>
+                  <button onClick={()=>setTrappeOpen(false)} style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>FERMER</button>
+                </div>
+              </div>
+            </div>
+            {[
+              {label:'Mode auto',val:'Activé',color:C.green},
+              {label:'Seuil temp.',val:'38.5°C',color:C.orange},
+              {label:'Synchro ventilo',val:'Activé',color:C.teal},
+              {label:'Angle ouverture',val:'90°',color:C.text},
+            ].map(r=>(
+              <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
+                <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:r.color}}>{r.val}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:12}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:8}}>CO2 ACTUEL</div>
+            <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+              <span style={{fontFamily:'Share Tech Mono',fontSize:28,color:state.co2<1500?C.green:C.yellow}}>{state.co2.toFixed(0)}</span>
+              <span style={{fontSize:13,color:C.textDim}}>ppm</span>
+              <span style={{marginLeft:'auto',fontSize:10,color:C.textDim}}>seuil: 2000</span>
+            </div>
+            <div style={{marginTop:6,height:4,background:C.border,borderRadius:2}}>
+              <div style={{height:'100%',width:`${(state.co2/2000)*100}%`,background:state.co2<1500?C.green:C.yellow,borderRadius:2,transition:'width 0.5s'}}/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── MAIN DASHBOARD ──────────────────────────────────────────────
+const Dashboard = ({ state, onNavigate }) => (
+  <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+    <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 200px',gap:12,padding:'12px 14px 8px'}}>
+      <SensorCard
+        icon="flame" label="TEMPÉRATURE" value={state.temp} unit="°C" min={35} max={40}
+        color={state.temp > state.params.tempTarget+1 ? C.red : state.temp < state.params.tempTarget-1 ? C.blue : C.orange}
+        history={state.tempHistory} subLabel="CONSIGNE" subValue={`${state.params.tempTarget}°C`}
+        alarm={Math.abs(state.temp - state.params.tempTarget) > 1}
+      />
+      <SensorCard
+        icon="droplet" label="HUMIDITÉ" value={state.hum} unit="%" min={40} max={80}
+        color={C.blue} history={state.humHistory}
+        subLabel="CONSIGNE" subValue={`${state.params.humTarget}%`}
+        alarm={Math.abs(state.hum - state.params.humTarget) > 10}
+      />
+      <SensorCard
+        icon="wind" label="CO2" value={state.co2} unit="ppm" min={400} max={2000}
+        color={state.co2 > 1500 ? C.yellow : C.teal} history={state.co2History}
+        subLabel="SEUIL MAX" subValue={`${state.params.co2Max}ppm`}
+        alarm={state.co2 > state.params.co2Max}
+      />
+      <ShortcutPanel
+        turnCount={state.turnCount} turnRemaining={state.turnRemaining}
+        motorDir={state.motorDir} servoOpen={state.servoOpen}
+        fanSpeed={state.fan} day={state.day}
+        onNavigate={onNavigate}
+      />
+    </div>
+    <StatusBar heat={state.heat} humid={state.humid} water={state.water} door={state.door} system={!state.door && !state.water} fan={state.fan}/>
   </div>
+);
 
-  <hr class="sep">
-  <h2 style="color:var(--gray)">ℹ️ Point d'accès de secours</h2>
-  <div class="info">📡 Réseau <b>Couveuse-P4</b> (mdp: <b>couveuse123</b>) — IP: <b>192.168.4.1</b> — toujours actif même sans box.</div>
-</div>
+// ─── ANIMATED CO2 BUBBLES ────────────────────────────────────────
+const CO2Bubbles = ({ co2, active }) => {
+  const count = Math.min(8, Math.floor(co2 / 250));
+  return (
+    <svg width="60" height="40" style={{position:'absolute',bottom:0,right:4,pointerEvents:'none'}}>
+      {Array.from({length:count},(_,i)=>(
+        <circle key={i}
+          cx={8+i*7} cy={20} r={2+i%3}
+          fill={co2>1500?C.yellow:C.teal} opacity="0"
+          style={{animation:`bubble ${1.2+i*0.3}s ease-in infinite`, animationDelay:`${i*0.18}s`}}/>
+      ))}
+    </svg>
+  );
+};
 
-<footer>Couveuse ESP32-P4 — Accès distant HiveMQ MQTT</footer>
+// ─── LIVE MINI CHART ─────────────────────────────────────────────
+const LiveChart = ({ data, color, w=260, h=48, target, targetLabel }) => {
+  if (!data || data.length < 2) return null;
+  const mn = Math.min(...data)-0.5, mx = Math.max(...data)+0.5, rng=mx-mn||1;
+  const pts = data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v-mn)/rng)*(h-4)+2}`).join(' ');
+  const tY = target ? h-((target-mn)/rng)*(h-4)+2 : null;
+  return (
+    <svg width={w} height={h} style={{overflow:'visible'}}>
+      <defs>
+        <linearGradient id={`lc${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#lc${color.replace('#','')})`}/>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+        style={{filter:`drop-shadow(0 0 4px ${color}88)`}}/>
+      {tY && <>
+        <line x1="0" y1={tY} x2={w} y2={tY} stroke={color} strokeWidth="1" strokeDasharray="4 3" opacity="0.5"/>
+        <text x={w-2} y={tY-3} fontSize="8" fill={color} textAnchor="end" opacity="0.8">{targetLabel}</text>
+      </>}
+      {/* Last value dot */}
+      <circle cx={w} cy={h-((data[data.length-1]-mn)/rng)*(h-4)+2} r="3" fill={color}
+        style={{filter:`drop-shadow(0 0 6px ${color})`}}/>
+    </svg>
+  );
+};
 
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-<script>
-var CFG={url:"wss://b372f5263631499b908210a0b354d18b.s1.eu.hivemq.cloud:8884/mqtt",user:"namir",pass:"Moad.351969",state:"couveuse/etat",cmd:"couveuse/cmd"};
-var client=null,connected=false,hist=[],motorTestOn=false;
-function G(id){return document.getElementById(id);}
-function pad(n){return String(n).padStart(2,'0');}
-function fmtUp(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h+'h'+pad(m)+'m';}
-function ST(id,el){
-  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  G('pane-'+id).classList.add('active'); el.classList.add('active');
-  if(id==='gfx')setTimeout(drawCharts,60);
-  if(id==='wifi')refreshWifiStatus();
-}
-function setBadge(id,on,a,b){var e=G(id);if(!e)return;e.textContent=on?a:b;e.className='badge '+(on?'on':'off');}
-function setFault(id,ok,a,b){var e=G(id);if(!e)return;e.textContent=ok?a:b;e.className='badge '+(ok?'on':'alarm');}
-function setSw(si,li,on,la,lb){var sw=G(si),l=G(li);if(!sw||!l)return;on?sw.classList.add('on'):sw.classList.remove('on');l.textContent=on?la:lb;l.style.color=on?'var(--green)':'var(--gray)';}
-function flash(id,msg,col){if(!id)return;var e=G(id);if(!e)return;e.textContent=msg;e.style.color=col||'var(--green)';clearTimeout(e._t);e._t=setTimeout(function(){e.textContent='';},3000);}
-function setMqSt(txt,bg,col){var e=G('mqttSt');if(!e)return;e.textContent=txt;e.style.background=bg;e.style.color=col;}
-function setLum(ch,on){var c=G('lumCard'+ch),s=G('lumSt'+ch);if(!c||!s)return;on?c.classList.add('on'):c.classList.remove('on');s.textContent='Canal '+ch+' — '+(on?'ALLUMÉ':'ÉTEINT');}
+// ─── WIFI SCREEN ─────────────────────────────────────────────────
+const WiFiScreen = ({ onBack }) => {
+  const [scanning, setScanning] = React.useState(false);
+  const [networks, setNetworks] = React.useState([
+    {ssid:'Maison_WiFi',rssi:-42,secured:true,connected:true},
+    {ssid:'TP-Link_5G',rssi:-58,secured:true,connected:false},
+    {ssid:'Livebox-3A2F',rssi:-71,secured:true,connected:false},
+    {ssid:'FreeWifi',rssi:-80,secured:false,connected:false},
+  ]);
+  const [tab, setTab] = React.useState('wifi');
+  const [mqttState] = React.useState({connected:true,host:'broker.hivemq.com',port:8883,lastPub:'08:44:12'});
+  const [telegramState] = React.useState({enabled:true,lastSent:'Hier 23:12',botOk:true});
 
-function applyData(d){
-  G('vT').textContent=d.temp.toFixed(1)+'°C'; G('vH').textContent=d.hum.toFixed(1)+'%'; G('vC').textContent=Math.round(d.co2)+' ppm';
-  G('tT').textContent=d.temp_target.toFixed(1); G('tH').textContent=Math.round(d.hum_target); G('tC').textContent=Math.round(d.co2_alarm)+' ppm';
-  G('tb').textContent=d.time+' | '+d.date;
-  var te=Math.abs(d.temp-d.temp_target); G('vT').className='val '+(te<=0.3?'ok':te<=0.6?'warn':'err');
-  var he=Math.abs(d.hum-d.hum_target); G('vH').className='val '+(he<=3?'ok':he<=6?'warn':'err');
-  G('vC').className='val '+(d.co2<d.co2_alarm?'ok':'err');
-  setBadge('bHeat',d.heat_on,'🔥 CHAUF ON','🔥 CHAUF OFF');
-  setBadge('bHumid',d.humid_on,'💧 HUMIDIF ON','💧 HUMIDIF OFF');
-  setFault('bWater',d.water_ok,'💧 EAU OK','💧 EAU VIDE!');
-  setFault('bDoor',d.door_ok,'🚪 PORTE OK','🚪 PORTE OUVERTE!');
-  setFault('bSys',d.system_ok,'✅ SYSTÈME OK','⛔ ARRÊTÉ');
-  G('cHeat').textContent=d.heat_h+'h'+pad(d.heat_m)+'m';
-  G('cHumid').textContent=d.humid_h+'h'+pad(d.humid_m)+'m';
-  if(d.turn_count!=null)G('cTurns').textContent=d.turn_count;
-  var ae=document.activeElement;
-  var iT=G('iT'),iH=G('iH'),iC=G('iC');
-  if(ae!==iT)iT.value=d.temp_target; if(ae!==iH)iH.value=Math.round(d.hum_target); if(ae!==iC)iC.value=Math.round(d.co2_alarm);
-  hist=d.history||[];
-  if(G('pane-gfx').classList.contains('active'))drawCharts();
-
-  // === LUMIÈRES (dans if(d.lights)) ===
-  if(d.lights){var l=d.lights;
-    G('lumSt8').textContent='Canal 8 — '+(l.ch8?'ALLUMÉ':'ÉTEINT');
-    G('lumSt9').textContent='Canal 9 — '+(l.ch9?'ALLUMÉ':'ÉTEINT');
-    G('lumSt10').textContent='Canal 10 — '+(l.ch10?'ALLUMÉ':'ÉTEINT');
-    G('lumSt11').textContent='Canal 11 — '+(l.ch11?'ALLUMÉ':'ÉTEINT');
-    G('lumCard8').style.background=l.ch8?'var(--yellow)':'var(--card)';
-    G('lumCard9').style.background=l.ch9?'var(--yellow)':'var(--card)';
-    G('lumCard10').style.background=l.ch10?'var(--yellow)':'var(--card)';
-    G('lumCard11').style.background=l.ch11?'var(--yellow)':'var(--card)';
-  }
-
-  // === STATISTIQUES (CORRIGÉ: en-dehors du bloc lights) ===
-  if(d.stats && d.stats.ok){
-    G('stTmin').textContent=d.stats.tmin.toFixed(1)+'°C';
-    G('stTmax').textContent=d.stats.tmax.toFixed(1)+'°C';
-    G('stHmin').textContent=d.stats.hmin.toFixed(1)+'%';
-    G('stHmax').textContent=d.stats.hmax.toFixed(1)+'%';
-    G('stCmin').textContent=Math.round(d.stats.co2min)+' ppm';
-    G('stCmax').textContent=Math.round(d.stats.co2max)+' ppm';
-  }
-  if(d.stats && d.stats.heat_time) G('stHeat').textContent=d.stats.heat_time;
-  if(d.stats && d.stats.humid_time) G('stHumid').textContent=d.stats.humid_time;
-
-  // === ALARMES ===
-  if(d.alarms!==undefined){var tb=G('alarmBody');tb.innerHTML='';
-    if(d.alarms.length===0){G('alarmEmpty').style.display='';G('alarmTbl').style.display='none';}
-    else{G('alarmEmpty').style.display='none';G('alarmTbl').style.display='';
-      d.alarms.forEach(function(a){var tr=document.createElement('tr');var col=a.on?'var(--red)':'var(--gray)';
-        tr.innerHTML='<td style="color:'+col+'">'+a.type+'</td><td>'+a.time+'</td><td>'+a.val.toFixed(1)+'</td><td><span class="badge '+(a.on?'alarm':'off')+'">'+(a.on?'ACTIF':'RÉSOLU')+'</span></td>';
-        tb.appendChild(tr);});
-    }
-  }
-
-  // === REDÉMARRAGES ===
-  if(d.reboots!==undefined){var rb=G('rebootBody');rb.innerHTML='';
-    if(d.reboots.length===0){G('rebootEmpty').style.display='';G('rebootTbl').style.display='none';}
-    else{G('rebootEmpty').style.display='none';G('rebootTbl').style.display='';
-      d.reboots.forEach(function(r){var tr=document.createElement('tr');
-        var cc=r.cause.indexOf('WDT')>=0||r.cause.indexOf('PANIC')>=0?'var(--red)':r.cause.indexOf('POWER')>=0?'var(--orange)':'var(--gray)';
-        tr.innerHTML='<td style="color:'+cc+';font-weight:bold">'+r.cause+'</td><td>'+r.date+'</td><td>'+r.time+'</td><td>'+fmtUp(r.up)+'</td>';
-        rb.appendChild(tr);});
-    }
-  }
-}
-
-function drawOneChart(id,data,yMin,yMax,color,unit){
-  var c=G(id);if(!c)return;var ctx=c.getContext('2d');
-  c.width=c.offsetWidth;c.height=parseInt(c.getAttribute('height'))||110;
-  var w=c.width,h=c.height,n=data.length;ctx.clearRect(0,0,w,h);
-  ctx.strokeStyle='#222244';ctx.lineWidth=1;
-  for(var i=0;i<=4;i++){var y2=h/4*i;ctx.beginPath();ctx.moveTo(0,y2);ctx.lineTo(w,y2);ctx.stroke();}
-  if(n<2)return;
-  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
-  for(var i=0;i<n;i++){var x=i/(n-1)*w,y=h-(data[i]-yMin)/(yMax-yMin)*(h-12)-6;y=Math.max(2,Math.min(h-2,y));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-  ctx.stroke();
-  var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),last=data[data.length-1];
-  ctx.font='10px Arial';ctx.fillStyle='#555577';ctx.fillText(mn.toFixed(1)+unit,4,h-3);ctx.fillText(mx.toFixed(1)+unit,4,12);
-  ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.fillText(last.toFixed(1)+unit,w-50,13);
-}
-function drawCharts(){
-  if(!hist||hist.length<2)return;
-  drawOneChart('cT',hist.map(function(p){return p.t;}),34,42,'#f39c12','°C');
-  drawOneChart('cH',hist.map(function(p){return p.h;}),30,90,'#4a90d9','%');
-  drawOneChart('cC',hist.map(function(p){return p.co2;}),300,3000,'#27ae60','ppm');
-}
-window.addEventListener('resize',function(){if(G('pane-gfx').classList.contains('active'))drawCharts();});
-
-function C(payload,msgId,msgTxt){
-  var body=JSON.stringify(payload);
-  // Mode distant : MQTT
-  if(connected&&client){
-    console.log('[→MQTT]',body);
-    client.publish(CFG.cmd,body,{qos:1},function(err){
-      if(err)flash(msgId,'❌ Erreur publish','var(--red)');
-      else flash(msgId,'✅ '+(msgTxt||'Envoyé (MQTT)'));
-    });
-    return;
-  }
-  // Mode local : HTTP (accès direct à l'ESP32)
-  var isTarget=(payload.temp!==undefined||payload.hum!==undefined||payload.co2!==undefined)
-    &&payload.motor_cmd===undefined&&payload.trappe_cmd===undefined&&payload.fan_cmd===undefined&&payload.light_cmd===undefined&&payload.incub_cmd===undefined;
-  var route=isTarget?'/set':'/cmd';
-  console.log('[→HTTP]',route,body);
-  fetch(route,{method:'POST',headers:{'Content-Type':'application/json'},body:body})
-    .then(function(r){if(r.ok)flash(msgId,'✅ '+(msgTxt||'Appliqué (HTTP)'));else flash(msgId,'❌ HTTP '+r.status,'var(--red)');})
-    .catch(function(){flash(msgId,'❌ Erreur réseau','var(--red)');});
-}
-function sendTargets(){C({temp:parseFloat(G('iT').value),hum:parseFloat(G('iH').value),co2:parseFloat(G('iC').value)},'smMon','Cibles appliquées');}
-function saveTrappeHor(){C({trappe_cmd:'save',trappe_dh:+G('tDH').value||0,trappe_dm:+G('tDM').value||0,trappe_fh:+G('tFH').value||0,trappe_fm:+G('tFM').value||0},'smTra','Horaires sauvegardés');}
-function saveIncub(){C({incub_cmd:'save',duree:+G('iDur').value||21,eclos_day:+G('iEclos').value||18},'smInc','Sauvegardé');}
-function toggleMotTest(){
-  motorTestOn=!motorTestOn;
-  G('btnMT').textContent=motorTestOn?'⏹ Arrêter le test':'▶ Lancer test G→D→Centre';
-  G('btnMT').className='btn btn-sm '+(motorTestOn?'btn-red':'btn-yellow');
-  C({motor_cmd:motorTestOn?'test_start':'test_stop'},'smMot',motorTestOn?'Test lancé':'Test arrêté');
-}
-
-function connect(){
-  setMqSt('🟡 Connexion...','#2a2000','var(--orange)');
-  client=mqtt.connect(CFG.url,{username:CFG.user,password:CFG.pass,clientId:'remote_'+Math.random().toString(16).slice(2),reconnectPeriod:5000,connectTimeout:10000,clean:true});
-  client.on('connect',function(){connected=true;setMqSt('🟢 Connecté','#1a3a1a','var(--green)');client.subscribe(CFG.state,{qos:1});});
-  client.on('message',function(topic,payload){if(topic!==CFG.state)return;try{applyData(JSON.parse(payload.toString()));}catch(e){console.error('[MQTT parse]',e);}});
-  client.on('disconnect',function(){connected=false;setMqSt('🔴 Déconnecté','#3a1a1a','var(--red)');});
-  client.on('reconnect',function(){connected=false;setMqSt('🟡 Reconnexion...','#2a2000','var(--orange)');});
-  client.on('error',function(e){connected=false;console.error('[MQTT]',e);setMqSt('🔴 Erreur MQTT','#3a1a1a','var(--red)');});
-  client.on('close',function(){connected=false;setMqSt('🔴 Fermé','#3a1a1a','var(--red)');});
-}
-
-// ─── Détection automatique : local (ESP32) ou distant (GitHub/internet) ───
-var IS_LOCAL = (function() {
-  var h = window.location.hostname;
-  return h === 'localhost'
-      || h === '127.0.0.1'
-      || h.endsWith('.local')
-      || /^192\.168\./.test(h)
-      || /^10\./.test(h)
-      || /^172\.(1[6-9]|2\d|3[01])\./.test(h);
-})();
-
-var httpTimer = null;
-
-function fetchLocal() {
-  fetch('/data')
-    .then(function(r){ return r.json(); })
-    .then(applyData)
-    .catch(function(){});
-}
-
-if (IS_LOCAL) {
-  // ── MODE LOCAL : HTTP pur, pas de MQTT
-  setMqSt('🔵 Mode local','#0a1a2a','var(--blue)');
-  fetchLocal();
-  httpTimer = setInterval(fetchLocal, 2000);
-} else {
-  // ── MODE DISTANT : MQTT via HiveMQ
-  fetchLocal();
-  httpTimer = setInterval(function(){
-    if (!connected) fetchLocal();
-  }, 2000);
-  connect();
-}
-
-// ── WiFi local ─
-function togglePw(){var i=G('wfPass');i.type=(i.type==='password')?'text':'password';}
-
-function wifiConnect(){
-  var ssid=G('wfSsid').value.trim(), pass=G('wfPass').value;
-  if(!ssid){flash('smWifi','❌ Entrez un nom de réseau','var(--red)');return;}
-  flash('smWifi','⏳ Connexion...','var(--orange)');
-  fetch('/wifi_connect',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ssid:ssid,pass:pass})})
-  .then(function(r){return r.text();})
-  .then(function(){
-    flash('smWifi','✅ Commande envoyée — patientez 15s','var(--green)');
-    setTimeout(refreshWifiStatus,15000);
-  }).catch(function(){flash('smWifi','❌ Erreur réseau','var(--red)');});
-}
-
-function wifiForget(){
-  if(!confirm('Oublier le réseau WiFi mémorisé ?')) return;
-  fetch('/wifi_forget',{method:'POST'}).then(function(){
-    flash('smWifi','✅ Réseau oublié','var(--green)');
-    G('wSsid').textContent='---'; G('wIp').textContent='---';
-    G('wStatus').textContent='ℹ️ Aucun réseau mémorisé. AP seul actif.';
-  }).catch(function(){flash('smWifi','❌ Erreur','var(--red)');});
-}
-
-function refreshWifiStatus(){
-  fetch('/data').then(function(r){return r.json();}).then(function(d){
-    var ssid=d.ssid||'', ip=d.ip||'---';
-    G('wSsid').textContent=ssid||'Non connecté';
-    G('wSsid').style.color=ssid?'var(--green)':'var(--gray)';
-    G('wIp').textContent=ip;
-    G('wStatus').textContent=ssid
-      ?('✅ Connecté à "'+ssid+'" — IP: '+ip)
-      :'⚠️ Non connecté — AP actif (192.168.4.1)';
-    G('wStatus').style.background=ssid?'#0d1a0d':'#1a1000';
-  }).catch(function(){});
-}
-</script>
-
-<script>
-/**
- * Iframe 元素高亮注入脚本
- * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
- *
- * 使用方法：
- * 1. 将此脚本添加到目标网站的 HTML 中
- * 2. 或通过浏览器扩展、用户脚本等方式注入
- */
-
-(function () {
-  "use strict";
-
-  // 检查是否在 iframe 中
-  if (window.self === window.top) {
-    return; // 不在 iframe 中，不执行
-  }
-
-  // 检查是否已经初始化过
-  if (window.__iframeHighlightInitialized) {
-    return;
-  }
-  window.__iframeHighlightInitialized = true;
-  console.log("Iframe 高亮脚本已加载");
-
-  // 创建高亮覆盖层
-  var overlay = document.createElement("div");
-  overlay.id = "iframe-highlight-overlay";
-  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
-
-  // 创建悬停高亮框（虚线边框）
-  var highlightBox = document.createElement("div");
-  highlightBox.id = "iframe-highlight-box";
-  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
-
-  // 创建选中节点的常驻高亮框（实线边框）
-  var selectedBox = document.createElement("div");
-  selectedBox.id = "iframe-selected-box";
-  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
-
-  // 创建悬停标签显示
-  var tagLabel = document.createElement("div");
-  tagLabel.id = "iframe-tag-label";
-  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
-
-  // 创建选中节点标签
-  var selectedLabel = document.createElement("div");
-  selectedLabel.id = "iframe-selected-label";
-  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
-  overlay.appendChild(highlightBox);
-  overlay.appendChild(selectedBox);
-  overlay.appendChild(tagLabel);
-  overlay.appendChild(selectedLabel);
-  document.body.appendChild(overlay);
-
-  // 存储当前选中的元素
-  var selectedElement = null;
-  var highlightEnabled = false;
-
-  // 更新选中元素的高亮显示
-  function updateSelectedHighlight(element) {
-    console.log("updateSelectedHighlight called with:", element);
-    if (!element) {
-      selectedBox.style.display = "none";
-      selectedLabel.style.display = "none";
-      selectedElement = null;
-      console.log("Cleared selected highlight");
-      return;
-    }
-    selectedElement = element;
-    var rect = element.getBoundingClientRect();
-    console.log("Selected element rect:", rect);
-
-    // 更新选中高亮框位置
-    selectedBox.style.display = "block";
-    selectedBox.style.left = "".concat(rect.left - 2, "px");
-    selectedBox.style.top = "".concat(rect.top - 2, "px");
-    selectedBox.style.width = "".concat(rect.width + 4, "px");
-    selectedBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新选中标签位置和内容
-    selectedLabel.style.display = "block";
-    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 28;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 5) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
-    if (labelLeft + labelWidth > window.innerWidth - 10) {
-      labelLeft = window.innerWidth - labelWidth - 10;
-    }
-    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
-    selectedLabel.style.top = "".concat(labelTop, "px");
-    console.log("Selected highlight positioned at:", {
-      left: selectedBox.style.left,
-      top: selectedBox.style.top,
-      width: selectedBox.style.width,
-      height: selectedBox.style.height
-    });
-  }
-  function getElementSelector(element) {
-    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
-    var segments = [];
-    var current = element;
-    while (current !== document.documentElement) {
-      var selector = '';
-      // 优先检查唯一ID
-      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
-        segments.unshift("#".concat(current.id));
-        break; // ID唯一，无需继续向上
-      }
-
-      // 生成类名选择器（取第一个有效类名）
-      var classes = Array.from(current.classList).filter(function (c) {
-        return !c.startsWith('js-');
-      });
-      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
-
-      // 生成位置索引（nth-child）
-      var tag = current.tagName.toLowerCase();
-      if (!className) {
-        var siblings = Array.from(current.parentNode.children);
-        var index = siblings.findIndex(function (el) {
-          return el === current;
-        }) + 1;
-        selector = "".concat(tag, ":nth-child(").concat(index, ")");
-      } else {
-        selector = className;
-      }
-      segments.unshift(selector);
-      current = current.parentElement;
-    }
-
-    // 处理根元素
-    if (current === document.documentElement) {
-      segments.unshift('html');
-    }
-    return segments.join(' > ');
-  }
-
-  // 获取元素文本内容
-  function getElementText(element) {
-    var _element$textContent;
-    if (element.tagName === "INPUT") {
-      return element.value || element.placeholder || "";
-    }
-    if (element.tagName === "TEXTAREA") {
-      return element.value || element.placeholder || "";
-    }
-    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
-    return text.length > 50 ? text.substring(0, 50) + "..." : text;
-  }
-
-  // 获取元素属性信息
-  function getElementAttributes(element) {
-    var attrs = {};
-    for (var i = 0; i < element.attributes.length; i++) {
-      var attr = element.attributes[i];
-      attrs[attr.name] = attr.value;
-    }
-    return attrs;
-  }
-
-  // 鼠标悬停事件处理
-  function handleMouseOver(e) {
-    if (!highlightEnabled) return;
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免高亮 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 如果是已选中的元素，不显示悬停高亮
-    if (target === selectedElement) {
-      highlightBox.style.display = "none";
-      tagLabel.style.display = "none";
-      return;
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-
-    // 更新悬停高亮框位置
-    highlightBox.style.display = "block";
-    highlightBox.style.left = "".concat(rect.left - 2, "px");
-    highlightBox.style.top = "".concat(rect.top - 2, "px");
-    highlightBox.style.width = "".concat(rect.width + 4, "px");
-    highlightBox.style.height = "".concat(rect.height + 4, "px");
-
-    // 更新标签位置和内容
-    tagLabel.style.display = "block";
-    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
-
-    // 计算标签位置，确保不超出视窗
-    var labelTop = rect.top - 22;
-    var labelLeft = rect.left;
-
-    // 如果标签会超出顶部，显示在元素下方
-    if (labelTop < 0) {
-      labelTop = rect.bottom + 5;
-    }
-
-    // 如果标签会超出右侧，向左调整
-    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
-      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
-    }
-    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
-    tagLabel.style.top = "".concat(labelTop, "px");
-
-    // 发送消息到父窗口
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 鼠标离开事件处理
-  function handleMouseOut(e) {
-    if (!highlightEnabled) return;
-    var relatedTarget = e.relatedTarget;
-
-    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
-    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
-      return;
-    }
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-hover",
-        data: null,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 点击事件处理
-  function handleClick(e) {
-    var target = e.target;
-    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
-      return;
-    }
-
-    // 避免处理 html 和 body 元素
-    if (target === document.documentElement || target === document.body) {
-      return;
-    }
-
-    // 检查是否是交互元素，这些元素需要保留默认行为
-    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
-
-    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
-    if (highlightEnabled) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    var rect = target.getBoundingClientRect();
-    var selector = getElementSelector(target);
-    var text = getElementText(target);
-    var attributes = getElementAttributes(target);
-    console.log("Element clicked:", {
-      tagName: target.tagName,
-      selector: selector,
-      rect: rect
-    });
-
-    // 立即更新选中高亮
-    updateSelectedHighlight(target);
-
-    // 隐藏悬停高亮，因为现在是选中状态
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    var elementInfo = {
-      tagName: target.tagName.toLowerCase(),
-      rect: {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        x: rect.x,
-        y: rect.y
-      },
-      selector: selector,
-      text: text,
-      attributes: attributes,
-      url: window.location.href,
-      path: window.location.pathname,
-      timestamp: Date.now()
-    };
-    try {
-      window.parent.postMessage({
-        type: "iframe-element-click",
-        data: elementInfo,
-        source: "iframe-highlight-injector"
-      }, "*");
-    } catch (error) {
-      console.warn("无法发送消息到父窗口:", error);
-    }
-  }
-
-  // 监听来自父窗口的消息
-  function handleParentMessage(event) {
-    console.log("Received message from parent:", event.data);
-    if (event.data.type === "iframe-highlight-toggle") {
-      var enabled = event.data.enabled;
-      console.log("Highlight toggle:", enabled);
-      if (enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "enable-iframe-highlight") {
-      console.log("Enable iframe highlight");
-      enableHighlight();
-    } else if (event.data.type === "disable-iframe-highlight") {
-      console.log("Disable iframe highlight");
-      disableHighlight();
-    } else if (event.data.type === "toggle-iframe-highlight") {
-      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
-      console.log("Toggle iframe highlight to:", _enabled);
-      if (_enabled) {
-        enableHighlight();
-      } else {
-        disableHighlight();
-      }
-    } else if (event.data.type === "update-selected-element") {
-      var selector = event.data.selector;
-      console.log("Update selected element with selector:", selector);
-      if (selector) {
-        try {
-          var element = document.querySelector(selector);
-          console.log("Found element by selector:", element);
-          updateSelectedHighlight(element);
-        } catch (error) {
-          console.warn("Failed to select element:", error);
-          updateSelectedHighlight(null);
-        }
-      } else {
-        updateSelectedHighlight(null);
-      }
-    } else if (event.data.type === "clear-selected-element") {
-      console.log("Clear selected element");
-      updateSelectedHighlight(null);
-    }
-  }
-
-  // 启用高亮功能
-  function enableHighlight() {
-    console.log("Enabling highlight");
-    document.addEventListener("mouseover", handleMouseOver, true);
-    document.addEventListener("mouseout", handleMouseOut, true);
-    document.addEventListener("click", handleClick, true);
-    highlightEnabled = true;
-    overlay.style.display = "block";
-  }
-
-  // 禁用高亮功能
-  function disableHighlight() {
-    console.log("Disabling highlight");
-    highlightEnabled = false;
-    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
-    // 这样可以保留选中状态的显示
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
-  }
-
-  // 完全禁用高亮功能（移除所有监听器）
-  function fullyDisableHighlight() {
-    console.log("Fully disabling highlight");
-    highlightEnabled = false;
-    document.removeEventListener("mouseover", handleMouseOver, true);
-    document.removeEventListener("mouseout", handleMouseOut, true);
-    document.removeEventListener("click", handleClick, true);
-    overlay.style.display = "none";
-    highlightBox.style.display = "none";
-    tagLabel.style.display = "none";
-    selectedBox.style.display = "none";
-    selectedLabel.style.display = "none";
-  }
-
-  // 添加事件监听
-  enableHighlight();
-  window.addEventListener("message", handleParentMessage);
-
-  // 暴露全局函数供外部调用
-  window.__iframeHighlightControl = {
-    enable: enableHighlight,
-    disable: disableHighlight,
-    fullyDisable: fullyDisableHighlight,
-    isEnabled: function isEnabled() {
-      return highlightEnabled;
-    },
-    getSelectedElement: function getSelectedElement() {
-      return selectedElement;
-    },
-    updateSelected: updateSelectedHighlight,
-    // 通过消息发送开关控制
-    sendToggleMessage: function sendToggleMessage(enabled) {
-      window.parent.postMessage({
-        type: 'iframe-highlight-status',
-        enabled: enabled || highlightEnabled,
-        source: 'iframe-highlight-injector'
-      }, '*');
-    }
+  const RssiBar = ({rssi}) => {
+    const pct = Math.max(0,Math.min(100,(rssi+100)/60*100));
+    const col = pct>70?C.green:pct>40?C.yellow:C.red;
+    return <div style={{display:'flex',gap:1,alignItems:'flex-end',height:14}}>
+      {[25,50,75,100].map((t,i)=>(
+        <div key={i} style={{width:4,height:3+i*3,borderRadius:1,background:pct>=t?col:C.border}}/>
+      ))}
+    </div>;
   };
 
-  // 通知父窗口脚本已加载
-  try {
-    window.parent.postMessage({
-      type: "iframe-highlight-ready",
-      data: {
-        url: window.location.href,
-        userAgent: navigator.userAgent,
-        timestamp: Date.now()
-      },
-      source: "iframe-highlight-injector"
-    }, "*");
-  } catch (error) {
-    console.warn("无法发送就绪消息到父窗口:", error);
-  }
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>WIFI & CONNECTIVITÉ</span>
+        <div style={{marginLeft:'auto',display:'flex',gap:0}}>
+          {['wifi','mqtt','telegram','ntp'].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{padding:'4px 14px',background:'none',border:'none',cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1,color:tab===t?C.accent:C.textDim,borderBottom:tab===t?`2px solid ${C.accent}`:'2px solid transparent',textTransform:'uppercase'}}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{flex:1,padding:16,overflowY:'auto'}}>
+        {tab==='wifi' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+                <span style={{fontSize:10,color:C.textDim,letterSpacing:2}}>RÉSEAUX DISPONIBLES</span>
+                <button onClick={()=>{setScanning(true);setTimeout(()=>setScanning(false),2000);}} style={{padding:'4px 10px',background:`${C.accent}15`,border:`1px solid ${C.accent}33`,borderRadius:6,color:C.accent,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:10,letterSpacing:1}}>
+                  {scanning?'SCAN...':'SCANNER'}
+                </button>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {networks.map((n,i)=>(
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:n.connected?`${C.green}10`:C.bgCard,border:`1px solid ${n.connected?C.green+'44':C.border}`,borderRadius:8,cursor:'pointer'}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent+'44'}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=n.connected?C.green+'44':C.border}>
+                    <RssiBar rssi={n.rssi}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,color:n.connected?C.green:C.text,fontFamily:'Barlow Condensed',letterSpacing:1}}>{n.ssid}</div>
+                      <div style={{fontSize:9,color:C.textDim}}>{n.rssi} dBm · {n.secured?'🔒 WPA2':'Ouvert'}</div>
+                    </div>
+                    {n.connected && <span style={{fontSize:9,color:C.green,letterSpacing:1}}>CONNECTÉ</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+                <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:10}}>ÉTAT CONNEXION</div>
+                {[
+                  {label:'Adresse IP',val:'192.168.1.42',color:C.green},
+                  {label:'Passerelle',val:'192.168.1.1',color:C.textMid},
+                  {label:'RSSI',val:'-42 dBm',color:C.green},
+                  {label:'Mode AP',val:'couveuse-ap',color:C.teal},
+                  {label:'mDNS',val:'couveuse.local',color:C.accent},
+                  {label:'Uptime WiFi',val:'3j 14h',color:C.textMid},
+                ].map(r=>(
+                  <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'6px 0'}}>
+                    <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                    <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:r.color}}>{r.val}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:`${C.teal}10`,border:`1px solid ${C.teal}33`,borderRadius:8,padding:10,display:'flex',gap:8,alignItems:'center'}}>
+                <Icon name="wifi" size={18} color={C.teal}/>
+                <div>
+                  <div style={{fontSize:11,color:C.teal}}>Serveur Web actif</div>
+                  <div style={{fontSize:9,color:C.textDim}}>http://192.168.1.42 · Port 80</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {tab==='mqtt' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            <div style={{background:C.bgCard,border:`1px solid ${mqttState.connected?C.green+'44':C.red+'44'}`,borderRadius:10,padding:16}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+                <div style={{width:10,height:10,borderRadius:'50%',background:mqttState.connected?C.green:C.red,boxShadow:`0 0 8px ${mqttState.connected?C.green:C.red}`}}/>
+                <span style={{fontFamily:'Barlow Condensed',fontSize:14,color:mqttState.connected?C.green:C.red,letterSpacing:2}}>{mqttState.connected?'CONNECTÉ':'DÉCONNECTÉ'}</span>
+              </div>
+              {[
+                {label:'Broker',val:mqttState.host},
+                {label:'Port TLS',val:String(mqttState.port)},
+                {label:'Client ID',val:'ESP32P4-a3f2'},
+                {label:'Topic état',val:'couveuse/state'},
+                {label:'Topic cmd',val:'couveuse/cmd'},
+                {label:'Dernier pub.',val:mqttState.lastPub},
+                {label:'Intervalle',val:'30 sec'},
+              ].map(r=>(
+                <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
+                  <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:C.textMid}}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+                <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:10}}>DERNIER JSON PUBLIÉ</div>
+                <pre style={{fontFamily:'Share Tech Mono',fontSize:9,color:C.textMid,lineHeight:1.6,whiteSpace:'pre-wrap'}}>{`{
+  "temp": 37.6,
+  "hum": 61.2,
+  "co2": 1240,
+  "heat": false,
+  "humid": false,
+  "day": 12,
+  "turns": 47
+}`}</pre>
+              </div>
+              <button style={{padding:'12px 0',borderRadius:8,background:`${C.accent}15`,border:`1px solid ${C.accent}44`,color:C.accent,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>TESTER CONNEXION</button>
+            </div>
+          </div>
+        )}
+        {tab==='telegram' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+              <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>CONFIGURATION BOT</div>
+              {[
+                {label:'Statut bot',val:'✓ Actif',color:C.green},
+                {label:'Token',val:'7234...xABF',color:C.textMid},
+                {label:'Chat ID',val:'987654321',color:C.textMid},
+                {label:'Cooldown',val:'2 minutes',color:C.textMid},
+                {label:'Dernier envoi',val:telegramState.lastSent,color:C.accent},
+              ].map(r=>(
+                <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'8px 0'}}>
+                  <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:r.color}}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:4}}>ALERTES ACTIVES</div>
+              {[
+                {label:'T° trop haute',enabled:true},
+                {label:'T° trop basse',enabled:true},
+                {label:'HR trop basse',enabled:true},
+                {label:'CO2 dépassé',enabled:true},
+                {label:'Manque d\'eau',enabled:true},
+                {label:'Porte ouverte',enabled:false},
+              ].map((a,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:6,padding:'8px 12px'}}>
+                  <span style={{fontSize:11,color:C.textMid}}>{a.label}</span>
+                  <div style={{width:36,height:20,borderRadius:10,background:a.enabled?C.green:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                    <div style={{position:'absolute',top:2,left:a.enabled?18:2,width:16,height:16,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+                  </div>
+                </div>
+              ))}
+              <button style={{marginTop:6,padding:'10px 0',borderRadius:8,background:`${C.blue}15`,border:`1px solid ${C.blue}44`,color:C.blue,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2}}>ENVOYER MESSAGE TEST</button>
+            </div>
+          </div>
+        )}
+        {tab==='ntp' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+              <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>SYNCHRONISATION NTP</div>
+              {[
+                {label:'Statut',val:'✓ Synchronisé',color:C.green},
+                {label:'Serveur',val:'pool.ntp.org',color:C.textMid},
+                {label:'Fuseau horaire',val:'Europe/Paris',color:C.textMid},
+                {label:'Dernière sync',val:'08:44:02',color:C.accent},
+                {label:'Epoch Unix',val:'1745230442',color:C.textDim},
+              ].map(r=>(
+                <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'8px 0'}}>
+                  <span style={{fontSize:11,color:C.textMid}}>{r.label}</span>
+                  <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:r.color}}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+              <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>HEURE MANUELLE (FALLBACK)</div>
+              <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:14}}>
+                {['08','44','00'].map((v,i)=>(
+                  <React.Fragment key={i}>
+                    <div style={{background:C.bgPanel,border:`1px solid ${C.border}`,borderRadius:8,padding:'8px 12px',textAlign:'center'}}>
+                      <div style={{fontSize:8,color:C.textDim,marginBottom:4}}>{['HH','MM','SS'][i]}</div>
+                      <span style={{fontFamily:'Share Tech Mono',fontSize:22,color:C.accent}}>{v}</span>
+                    </div>
+                    {i<2 && <span style={{fontFamily:'Share Tech Mono',fontSize:24,color:C.textDim,alignSelf:'center'}}>:</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+              <button style={{width:'100%',padding:'10px 0',borderRadius:8,background:`${C.accent}15`,border:`1px solid ${C.accent}44`,color:C.accent,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2}}>APPLIQUER HEURE MANUELLE</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
-  // 清理函数
-  window.__iframeHighlightCleanup = function () {
-    fullyDisableHighlight();
-    window.removeEventListener("message", handleParentMessage);
-    if (overlay.parentElement) {
-      overlay.parentElement.removeChild(overlay);
-    }
-    delete window.__iframeHighlightInitialized;
-    delete window.__iframeHighlightCleanup;
+// ─── CALIBRATION SCREEN ──────────────────────────────────────────
+const CalibScreen = ({ onBack }) => {
+  const [offsets, setOffsets] = React.useState({sht45T:0.0,sht45H:0.0,scd41T:0.0,scd41H:0.0});
+  const [saved, setSaved] = React.useState(false);
+
+  const save = () => { setSaved(true); setTimeout(()=>setSaved(false),2000); };
+
+  const CalibRow = ({label, key_, unit, raw, color}) => {
+    const corrected = +(raw + offsets[key_]).toFixed(1);
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.border}`}}>
+        <div style={{flex:2}}>
+          <div style={{fontSize:11,color:C.text,marginBottom:2}}>{label}</div>
+          <div style={{fontSize:9,color:C.textDim}}>Brut : <span style={{fontFamily:'Share Tech Mono',color:C.textMid}}>{raw}{unit}</span></div>
+        </div>
+        <div style={{flex:1,textAlign:'center'}}>
+          <div style={{fontSize:9,color:C.textDim,marginBottom:2}}>OFFSET</div>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <button onClick={()=>setOffsets(o=>({...o,[key_]:+(o[key_]-0.1).toFixed(1)}))} style={{width:24,height:24,borderRadius:4,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:14}}>−</button>
+            <span style={{fontFamily:'Share Tech Mono',fontSize:13,color:C.accent,minWidth:44,textAlign:'center'}}>{offsets[key_]>0?'+':''}{offsets[key_].toFixed(1)}{unit}</span>
+            <button onClick={()=>setOffsets(o=>({...o,[key_]:+(o[key_]+0.1).toFixed(1)}))} style={{width:24,height:24,borderRadius:4,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:14}}>+</button>
+          </div>
+        </div>
+        <div style={{flex:1,textAlign:'center'}}>
+          <div style={{fontSize:9,color:C.textDim,marginBottom:2}}>CORRIGÉ</div>
+          <span style={{fontFamily:'Share Tech Mono',fontSize:16,color}}>{corrected}{unit}</span>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{height:4,background:C.border,borderRadius:2,position:'relative',overflow:'visible'}}>
+            <div style={{position:'absolute',left:'50%',top:-1,width:2,height:6,background:C.textDim,borderRadius:1}}/>
+            <div style={{position:'absolute',left:`${50+(offsets[key_]/2)*50}%`,top:0,width:4,height:4,borderRadius:'50%',background:color,transform:'translateX(-50%)',transition:'left 0.2s',boxShadow:`0 0 6px ${color}`}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:2}}>
+            <span style={{fontSize:8,color:C.textDim}}>-1.0</span>
+            <span style={{fontSize:8,color:C.textDim}}>+1.0</span>
+          </div>
+        </div>
+      </div>
+    );
   };
-})();
 
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>CALIBRATION CAPTEURS</span>
+        <button onClick={save} style={{marginLeft:'auto',padding:'6px 18px',borderRadius:8,background:saved?`${C.green}20`:`${C.accent}20`,border:`1px solid ${saved?C.green:C.accent}44`,color:saved?C.green:C.accent,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2}}>
+          {saved ? '✓ SAUVEGARDÉ' : 'SAUVEGARDER NVS'}
+        </button>
+      </div>
+      <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr',gap:0,padding:16}}>
+        {/* SHT45 */}
+        <div style={{paddingRight:16,borderRight:`1px solid ${C.border}`}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,padding:'8px 12px',background:`${C.orange}10`,border:`1px solid ${C.orange}22`,borderRadius:8}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:C.green}}/>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:13,color:C.text,letterSpacing:2}}>SHT45</span>
+            <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>Adresse 0x44</span>
+            <span style={{marginLeft:'auto',fontSize:9,color:C.green}}>I2C OK</span>
+          </div>
+          <CalibRow label="Température" key_="sht45T" unit="°C" raw={37.8} color={C.orange}/>
+          <CalibRow label="Humidité relative" key_="sht45H" unit="%" raw={62.4} color={C.blue}/>
+          <div style={{marginTop:12,padding:'8px 10px',background:C.bgPanel,borderRadius:6,fontSize:10,color:C.textDim,lineHeight:1.6}}>
+            <strong style={{color:C.textMid}}>Conseil :</strong> Utiliser un thermomètre de référence certifié. Stabiliser 30 min avant calibration.
+          </div>
+        </div>
+        {/* SCD41 */}
+        <div style={{paddingLeft:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12,padding:'8px 12px',background:`${C.teal}10`,border:`1px solid ${C.teal}22`,borderRadius:8}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:C.green}}/>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:13,color:C.text,letterSpacing:2}}>SCD41</span>
+            <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>Adresse 0x62</span>
+            <span style={{marginLeft:'auto',fontSize:9,color:C.green}}>I2C OK</span>
+          </div>
+          <CalibRow label="Température CO2" key_="scd41T" unit="°C" raw={37.4} color={C.orange}/>
+          <CalibRow label="Humidité CO2" key_="scd41H" unit="%" raw={60.8} color={C.blue}/>
+          <div style={{marginTop:10,display:'flex',flexDirection:'column',gap:6}}>
+            <button style={{padding:'9px 0',borderRadius:8,background:`${C.teal}10`,border:`1px solid ${C.teal}33`,color:C.teal,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>CALIBRATION CO2 AIR FRAIS (400ppm)</button>
+            <button style={{padding:'9px 0',borderRadius:8,background:`${C.red}10`,border:`1px solid ${C.red}22`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>RESET OFFSET → 0.0</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── TARGETS SCREEN ──────────────────────────────────────────────
+const TargetsScreen = ({ onBack, params, setParams }) => {
+  const day = 12;
+  const totalDays = params.duration;
+  const phases = [
+    {label:'Incubation',from:1,to:params.eclosionDay-1,color:C.orange,icon:'flame'},
+    {label:'Pré-éclosion',from:params.eclosionDay,to:totalDays-1,color:C.yellow,icon:'egg'},
+    {label:'Éclosion',from:totalDays,to:totalDays,color:C.green,icon:'egg'},
+  ];
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>CIBLES & PHASES</span>
+      </div>
+      <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,padding:16,overflowY:'auto'}}>
+        {/* Timeline */}
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>CALENDRIER INCUBATION</div>
+            {/* Timeline bar */}
+            <div style={{position:'relative',height:24,marginBottom:10}}>
+              <div style={{position:'absolute',top:10,left:0,right:0,height:4,background:C.border,borderRadius:2}}/>
+              {phases.map(ph=>(
+                <div key={ph.label} style={{
+                  position:'absolute',top:8,
+                  left:`${((ph.from-1)/totalDays)*100}%`,
+                  width:`${((ph.to-ph.from+1)/totalDays)*100}%`,
+                  height:8,borderRadius:4,background:ph.color,opacity:0.7
+                }}/>
+              ))}
+              {/* Current day marker */}
+              <div style={{position:'absolute',top:2,left:`${((day-1)/totalDays)*100}%`,transform:'translateX(-50%)'}}>
+                <div style={{width:2,height:20,background:C.accent,borderRadius:1,margin:'0 auto',boxShadow:`0 0 6px ${C.accent}`}}/>
+                <div style={{fontSize:8,color:C.accent,textAlign:'center',marginTop:2,fontFamily:'Share Tech Mono'}}>J{day}</div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              {phases.map(ph=>(
+                <div key={ph.label} style={{flex:1,padding:'8px 6px',background:`${ph.color}10`,border:`1px solid ${ph.color}33`,borderRadius:6,textAlign:'center'}}>
+                  <div style={{fontSize:9,color:ph.color,letterSpacing:1,marginBottom:2}}>{ph.label}</div>
+                  <div style={{fontFamily:'Share Tech Mono',fontSize:11,color:ph.color}}>J{ph.from}–J{ph.to}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Key dates */}
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:10}}>DATES CLÉS</div>
+            {[
+              {label:'Début incubation',val:'09/04/2025',color:C.textMid},
+              {label:'Mirage J7',val:'16/04/2025',color:C.teal, done:true},
+              {label:'Mirage J14',val:'23/04/2025',color:C.yellow},
+              {label:'Arrêt retournement (J18)',val:'27/04/2025',color:C.orange},
+              {label:'Début éclosion (J18)',val:'27/04/2025',color:C.green},
+              {label:'Éclosion prévue (J21)',val:'30/04/2025',color:C.accent},
+            ].map((r,i)=>(
+              <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  {r.done && <div style={{width:14,height:14,borderRadius:'50%',background:`${C.green}20`,border:`1px solid ${C.green}44`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={9} color={C.green}/></div>}
+                  <span style={{fontSize:11,color:r.done?C.textDim:C.textMid}}>{r.label}</span>
+                </div>
+                <span style={{fontFamily:'Share Tech Mono',fontSize:11,color:r.color}}>{r.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Targets per phase */}
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>CONSIGNES PAR PHASE</div>
+            {[
+              {phase:'INCUBATION (J1–J17)',temp:'37.5°C',hum:'60%',turn:'✓',color:C.orange},
+              {phase:'PRÉ-ÉCLOSION (J18–J20)',temp:'37.5°C',hum:'70%',turn:'✗',color:C.yellow},
+              {phase:'ÉCLOSION (J21)',temp:'37.2°C',hum:'75%',turn:'✗',color:C.green},
+            ].map((ph,i)=>(
+              <div key={i} style={{background:day>=([1,params.eclosionDay,totalDays][i]) && day<=([params.eclosionDay-1,totalDays-1,totalDays][i]) ? `${ph.color}10`:'transparent',border:`1px solid ${day>=([1,params.eclosionDay,totalDays][i]) && day<=([params.eclosionDay-1,totalDays-1,totalDays][i])?ph.color+'33':C.border}`,borderRadius:8,padding:'10px 12px',marginBottom:8}}>
+                <div style={{fontSize:9,color:ph.color,letterSpacing:1,marginBottom:6}}>{ph.phase}</div>
+                <div style={{display:'flex',gap:12}}>
+                  <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:8,color:C.textDim}}>T°</div>
+                    <span style={{fontFamily:'Share Tech Mono',fontSize:14,color:C.orange}}>{ph.temp}</span>
+                  </div>
+                  <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:8,color:C.textDim}}>HR</div>
+                    <span style={{fontFamily:'Share Tech Mono',fontSize:14,color:C.blue}}>{ph.hum}</span>
+                  </div>
+                  <div style={{textAlign:'center'}}>
+                    <div style={{fontSize:8,color:C.textDim}}>RETOURNEMENT</div>
+                    <span style={{fontFamily:'Share Tech Mono',fontSize:14,color:ph.turn==='✓'?C.green:C.textDim}}>{ph.turn}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Egg count */}
+          <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
+            <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:10}}>BILAN ŒUFS</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+              {[
+                {label:'EN COUVEUSE',val:'24',color:C.accent},
+                {label:'FÉCONDÉS (J7)',val:'22',color:C.green},
+                {label:'ÉCLOS (prévu)',val:'~20',color:C.teal},
+              ].map(s=>(
+                <div key={s.label} style={{textAlign:'center',padding:'8px 4px',background:C.bgPanel,borderRadius:6}}>
+                  <div style={{fontFamily:'Share Tech Mono',fontSize:22,color:s.color}}>{s.val}</div>
+                  <div style={{fontSize:8,color:C.textDim,marginTop:2}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── LIGHTS SCREEN ───────────────────────────────────────────────
+const LightsScreen = ({ onBack }) => {
+  const [lights, setLights] = React.useState({ch8:false,ch9:false,ch10:false,ch11:false,internal:false,lock:false});
+  const Toggle = ({id,label,color=C.accent}) => (
+    <div style={{background:C.bgCard,border:`1px solid ${lights[id]?color+'44':C.border}`,borderRadius:10,padding:16,display:'flex',flexDirection:'column',alignItems:'center',gap:10,cursor:'pointer',transition:'all 0.2s'}} onClick={()=>setLights(l=>({...l,[id]:!l[id]}))}>
+      <div style={{width:40,height:40,borderRadius:'50%',background:lights[id]?`${color}30`:C.bgPanel,border:`2px solid ${lights[id]?color:C.border}`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:lights[id]?`0 0 16px ${color}66`:undefined,transition:'all 0.3s'}}>
+        <Icon name={id==='lock'?'lock':'light'} size={18} color={lights[id]?color:C.textDim}/>
+      </div>
+      <span style={{fontSize:10,color:lights[id]?color:C.textDim,letterSpacing:1,textAlign:'center'}}>{label}</span>
+      <div style={{width:32,height:16,borderRadius:8,background:lights[id]?color:C.border,position:'relative',transition:'background 0.2s'}}>
+        <div style={{position:'absolute',top:2,left:lights[id]?18:2,width:12,height:12,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
+        <button onClick={onBack} style={{background:'none',border:'none',cursor:'pointer',display:'flex',alignItems:'center',gap:6,color:C.accent}}>
+          <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
+        </button>
+        <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>LUMIÈRES & SERRURE</span>
+      </div>
+      <div style={{flex:1,display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:12,padding:16}}>
+        <Toggle id="internal" label="LUMIÈRE INTERNE" color={C.yellow}/>
+        <Toggle id="ch8" label="ZONE A" color={C.yellow}/>
+        <Toggle id="ch9" label="ZONE B" color={C.yellow}/>
+        <Toggle id="ch10" label="ZONE C" color={C.yellow}/>
+        <Toggle id="ch11" label="ZONE D" color={C.yellow}/>
+        <Toggle id="lock" label="SERRURE" color={C.red}/>
+      </div>
+    </div>
+  );
+};
+
+// ─── MAIN APP ────────────────────────────────────────────────────
+const App = () => {
+  const [screen, setScreen] = React.useState('dashboard');
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [tweaksVisible, setTweaksVisible] = React.useState(false);
+  const [params, setParams] = React.useState({
+    tempTarget:37.5, tempMargin:0.3, humTarget:60, humMargin:2,
+    co2Max:2000, duration:21, turnInterval:60, eclosionDay:18,
+    humEclosion:70, motorMs:5000, telegram:true, alertCO2:true, screensaver:'5min'
+  });
+
+  // Simulate live data
+  const mkHistory = (base, spread, n=30) => Array.from({length:n},(_,i)=>+(base + (Math.sin(i*0.5)+Math.random()-0.5)*spread).toFixed(1));
+  const [liveTemp, setLiveTemp] = React.useState(37.6);
+  const [liveHum, setLiveHum] = React.useState(61.2);
+  const [liveCo2, setLiveCo2] = React.useState(1240);
+  const [time, setTime] = React.useState('');
+  const [date, setDate] = React.useState('');
+
+  React.useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString('fr-FR'));
+      setDate(now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}));
+      setLiveTemp(t => +(t + (Math.random()-0.5)*0.08).toFixed(2));
+      setLiveHum(h => +(h + (Math.random()-0.5)*0.3).toFixed(1));
+      setLiveCo2(c => Math.max(400, Math.min(1900, +(c + (Math.random()-0.48)*8).toFixed(0))));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return ()=>clearInterval(id);
+  }, []);
+
+  const state = {
+    temp: liveTemp, hum: liveHum, co2: liveCo2,
+    tempHistory: mkHistory(37.5, 0.4),
+    humHistory: mkHistory(60, 3),
+    co2History: mkHistory(1200, 200),
+    heat: liveTemp < params.tempTarget - params.tempMargin,
+    humid: liveHum < params.humTarget - params.humMargin,
+    water: false, door: false,
+    fan: 45, servoOpen: false,
+    motorDir: 'STOP', turnCount: 47, turnRemaining: 2134,
+    day: 12, params,
+    tempMin: 36.8, tempMax: 38.1, humMin: 56, humMax: 68,
+  };
+
+  // Tweaks setup
+  React.useEffect(() => {
+    window.addEventListener('message', e => {
+      if (e.data?.type === '__activate_edit_mode') setTweaksVisible(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweaksVisible(false);
+    });
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+  }, []);
+
+  return (
+    <div style={{width:1024,height:600,background:C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+        @keyframes spinFan { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes airflow { 0%{opacity:0;transform:translateY(-4px)} 50%{opacity:0.8} 100%{opacity:0;transform:translateY(4px)} }
+        @keyframes flamePulse { from{transform:scaleX(0.8) scaleY(0.9);opacity:0.1} to{transform:scaleX(1.2) scaleY(1.1);opacity:0.25} }
+        @keyframes flameWobble { from{transform:rotate(-4deg) scaleY(0.96)} to{transform:rotate(4deg) scaleY(1.04)} }
+        @keyframes dropFall { 0%{opacity:0;transform:translateY(-6px)} 30%{opacity:0.8} 100%{opacity:0;transform:translateY(8px)} }
+        @keyframes dropPulse { from{filter:drop-shadow(0 0 4px #3898e888)} to{filter:drop-shadow(0 0 12px #3898e8cc)} }
+        @keyframes bubble { 0%{opacity:0;transform:translateY(0) scale(0.5)} 40%{opacity:0.7} 100%{opacity:0;transform:translateY(-28px) scale(1.2)} }
+        @keyframes eggRock { 0%,100%{transform:rotate(-22deg)} 50%{transform:rotate(22deg)} }
+        @keyframes eggSettle { 0%{transform:rotate(22deg)} 100%{transform:rotate(0deg)} }
+        @keyframes shimmer { 0%{opacity:0.4;transform:translateX(-100%)} 100%{opacity:0;transform:translateX(100%)} }
+        ::-webkit-scrollbar{width:4px;background:transparent}
+        ::-webkit-scrollbar-thumb{background:#2a3848;border-radius:2px}
+      `}</style>
+      <TopBar time={time} date={date} wifi={true} onMenu={()=>setMenuOpen(true)} alarm={false}/>
+      <div style={{flex:1,overflow:'hidden'}}>
+        {screen==='dashboard' && <Dashboard state={state} onNavigate={setScreen}/>}
+        {screen==='settings'  && <SettingsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams}/>}
+        {screen==='motor'     && <MotorScreen onBack={()=>setScreen('dashboard')} state={state}/>}
+        {screen==='stats'     && <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
+        {screen==='fan'       && <FanScreen onBack={()=>setScreen('dashboard')} state={state} setState={()=>{}}/>}
+        {screen==='trappe'    && <FanScreen onBack={()=>setScreen('dashboard')} state={state} setState={()=>{}}/>}
+        {screen==='lights'    && <LightsScreen onBack={()=>setScreen('dashboard')}/>}
+        {screen==='wifi'      && <WiFiScreen onBack={()=>setScreen('dashboard')}/>}
+        {screen==='calib'     && <CalibScreen onBack={()=>setScreen('dashboard')}/>}
+        {screen==='targets'   && <TargetsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams}/>}
+        {screen==='graph'     && <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
+        {screen==='reboot_log'&& <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
+      </div>
+      {menuOpen && <MenuPopup onClose={()=>setMenuOpen(false)} onNavigate={s=>{setScreen(s);setMenuOpen(false);}}/>}
+
+      {/* TWEAKS PANEL */}
+      <div className={`tweaks-panel ${tweaksVisible?'visible':''}`}>
+        <h4>Tweaks</h4>
+        <div className="tweaks-row"><label>Thème</label><div className="tweaks-toggle"><button className="active">Sombre</button><button>Clair</button></div></div>
+        <div className="tweaks-row"><label>Simuler alarme T°</label><div className="tweaks-toggle"><button onClick={e=>{}} className="">OFF</button><button className="active">ON</button></div></div>
+        <div className="tweaks-row"><label>Afficher CO2</label><div className="tweaks-toggle"><button className="active">Oui</button><button>Non</button></div></div>
+        <div className="tweaks-row"><label>Jour incubation</label><input type="range" min="1" max="21" defaultValue="12"/></div>
+        <div className="tweaks-row"><label>Vitesse animation</label><input type="range" min="1" max="5" defaultValue="3"/></div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
+
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 56">
+  <rect width="80" height="56" fill="#0a0c0f"/>
+  <ellipse cx="40" cy="28" rx="14" ry="18" fill="#e8a838" opacity="0.8"/>
+  <text x="40" y="52" font-size="5" fill="#e8a838" text-anchor="middle" font-family="monospace">COUVEUSE</text>
+</svg>
+</template>
 </body>
 </html>
-
