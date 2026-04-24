@@ -454,10 +454,18 @@ const MenuPopup = ({ onClose, onNavigate }) => {
 };
 
 // ─── SETTINGS SCREEN ─────────────────────────────────────────────
-const SettingsScreen = ({ onBack, params, setParams }) => {
+const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
   const [tab, setTab] = React.useState('regulation');
   const [pinInput, setPinInput] = React.useState('');
   const [unlocked, setUnlocked] = React.useState(false);
+  const send = sendCmd || (()=>{});
+
+  // Appliquer les cibles vers l'ESP32
+  const applyParams = (p) => {
+    send({temp: p.tempTarget, hum: p.humTarget, co2: p.co2Max});
+    send({motor_cmd:'turn_inc', turn_min: p.turnInterval});
+    send({incub_cmd:'save', duree: p.duration, eclos_day: p.eclosionDay});
+  };
 
   const tabs = [
     {id:'regulation',label:'RÉGULATION'},
@@ -487,10 +495,15 @@ const SettingsScreen = ({ onBack, params, setParams }) => {
           <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
         </button>
         <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>RÉGLAGES</span>
-        {!unlocked && <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
-          <Icon name="lock" size={14} color={C.accentDim}/>
-          <span style={{fontSize:10,color:C.accentDim}}>PIN requis pour modifier</span>
-        </div>}
+        {!unlocked
+          ? <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
+              <Icon name="lock" size={14} color={C.accentDim}/>
+              <span style={{fontSize:10,color:C.accentDim}}>PIN requis pour modifier</span>
+            </div>
+          : <button onClick={()=>applyParams(params)} style={{marginLeft:'auto',padding:'6px 18px',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,fontWeight:700}}>
+              ✅ APPLIQUER
+            </button>
+        }
       </div>
       <div style={{display:'flex',gap:0,padding:'0 16px',background:C.bgPanel,borderBottom:`1px solid ${C.border}`}}>
         {tabs.map(t=>(
@@ -579,9 +592,11 @@ const MotorScreen = ({ onBack, state }) => {
   const [dir, setDir] = React.useState('STOP');
   const [running, setRunning] = React.useState(false);
   const pos = dir==='LEFT' ? 20 : dir==='RIGHT' ? 80 : 50;
+  const send = state.sendCmd || (()=>{});
 
   const startMotor = (d) => {
     setDir(d); setRunning(true);
+    send({motor_cmd: d==='LEFT' ? 'go_left' : 'go_right'});
     setTimeout(()=>{setRunning(false);setDir('STOP');},3000);
   };
 
@@ -672,14 +687,14 @@ const MotorScreen = ({ onBack, state }) => {
               <button onClick={()=>startMotor('LEFT')} disabled={running} style={{flex:1,padding:'14px 0',borderRadius:8,background:dir==='LEFT'?`${C.orange}30`:C.bgPanel,border:`1px solid ${dir==='LEFT'?C.orange:C.border}`,color:dir==='LEFT'?C.orange:C.textMid,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:13,letterSpacing:2,fontWeight:700}}>← GAUCHE</button>
               <button onClick={()=>startMotor('RIGHT')} disabled={running} style={{flex:1,padding:'14px 0',borderRadius:8,background:dir==='RIGHT'?`${C.orange}30`:C.bgPanel,border:`1px solid ${dir==='RIGHT'?C.orange:C.border}`,color:dir==='RIGHT'?C.orange:C.textMid,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:13,letterSpacing:2,fontWeight:700}}>DROITE →</button>
             </div>
-            <button onClick={()=>{setDir('STOP');setRunning(false);}} style={{width:'100%',padding:'10px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2,fontWeight:700}}>■ STOP</button>
+            <button onClick={()=>{setDir('STOP');setRunning(false);send({motor_cmd:'stop'});}} style={{width:'100%',padding:'10px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2,fontWeight:700}}>■ STOP</button>
           </div>
           <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:16,flex:1}}>
             <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:12}}>PARAMÈTRES</div>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {[
-                {label:'Intervalle',val:'60 min'},
-                {label:'Durée trajet',val:'5.0 s'},
+                {label:'Intervalle',val:`${state.params.turnInterval} min`},
+                {label:'Durée trajet',val:`${(state.params.motorMs/1000).toFixed(1)} s`},
                 {label:'Position actuelle',val:dir==='LEFT'?'GAUCHE':dir==='RIGHT'?'DROITE':'CENTRE'},
               ].map(r=>(
                 <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,paddingBottom:8}}>
@@ -687,7 +702,7 @@ const MotorScreen = ({ onBack, state }) => {
                   <span style={{fontFamily:'Share Tech Mono',fontSize:12,color:C.accent}}>{r.val}</span>
                 </div>
               ))}
-              <button style={{marginTop:6,padding:'10px 0',borderRadius:8,background:`${C.teal}15`,border:`1px solid ${C.teal}44`,color:C.teal,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>LANCER TEST AUTOMATIQUE</button>
+              <button onClick={()=>send({motor_cmd:'test_start'})} style={{marginTop:6,padding:'10px 0',borderRadius:8,background:`${C.teal}15`,border:`1px solid ${C.teal}44`,color:C.teal,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>LANCER TEST AUTOMATIQUE</button>
             </div>
           </div>
         </div>
@@ -813,7 +828,15 @@ const StatsScreen = ({ onBack, state }) => {
 const FanScreen = ({ onBack, state, setState }) => {
   const [mode, setMode] = React.useState('auto');
   const [manSpeed, setManSpeed] = React.useState(state.fan);
-  const [trappeOpen, setTrappeOpen] = React.useState(false);
+  const [trappeOpen, setTrappeOpen] = React.useState(state.servoOpen||false);
+  const send = state.sendCmd || (()=>{});
+
+  const setFanSpeed = (spd) => {
+    setManSpeed(spd);
+    send({fan_cmd:'set', speed: spd});
+  };
+  const openTrappe  = () => { setTrappeOpen(true);  send({trappe_cmd:'open'}); };
+  const closeTrappe = () => { setTrappeOpen(false); send({trappe_cmd:'close'}); };
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
       <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:`1px solid ${C.border}`,background:C.bgPanel}}>
@@ -834,8 +857,8 @@ const FanScreen = ({ onBack, state, setState }) => {
               </div>
             </div>
             <div style={{display:'flex',gap:8}}>
-              <button onClick={()=>setManSpeed(Math.max(0,manSpeed-10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>−</button>
-              <button onClick={()=>setManSpeed(Math.min(100,manSpeed+10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>+</button>
+              <button onClick={()=>setFanSpeed(Math.max(0,manSpeed-10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>−</button>
+              <button onClick={()=>setFanSpeed(Math.min(100,manSpeed+10))} style={{width:40,height:40,borderRadius:8,background:C.bgPanel,border:`1px solid ${C.border}`,color:C.text,cursor:'pointer',fontSize:18}}>+</button>
             </div>
           </div>
           <div style={{display:'flex',gap:8}}>
@@ -854,8 +877,8 @@ const FanScreen = ({ onBack, state, setState }) => {
                   {trappeOpen ? '▲ OUVERTE' : '▬ FERMÉE'}
                 </div>
                 <div style={{display:'flex',gap:8}}>
-                  <button onClick={()=>setTrappeOpen(true)} style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>OUVRIR</button>
-                  <button onClick={()=>setTrappeOpen(false)} style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>FERMER</button>
+                  <button onClick={openTrappe}  style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>OUVRIR</button>
+                  <button onClick={closeTrappe} style={{flex:1,padding:'8px 0',borderRadius:8,background:`${C.red}20`,border:`1px solid ${C.red}44`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>FERMER</button>
                 </div>
               </div>
             </div>
@@ -1169,11 +1192,17 @@ const WiFiScreen = ({ onBack }) => {
 };
 
 // ─── CALIBRATION SCREEN ──────────────────────────────────────────
-const CalibScreen = ({ onBack }) => {
+const CalibScreen = ({ onBack, sendCmd }) => {
   const [offsets, setOffsets] = React.useState({sht45T:0.0,sht45H:0.0,scd41T:0.0,scd41H:0.0});
   const [saved, setSaved] = React.useState(false);
+  const send = sendCmd || (()=>{});
 
-  const save = () => { setSaved(true); setTimeout(()=>setSaved(false),2000); };
+  const save = () => {
+    send({calib_cmd:'save',
+      sht45_temp: offsets.sht45T, sht45_hum: offsets.sht45H,
+      scd41_temp: offsets.scd41T, scd41_hum: offsets.scd41H});
+    setSaved(true); setTimeout(()=>setSaved(false),2000);
+  };
 
   const CalibRow = ({label, key_, unit, raw, color}) => {
     const corrected = +(raw + offsets[key_]).toFixed(1);
@@ -1256,7 +1285,8 @@ const CalibScreen = ({ onBack }) => {
 };
 
 // ─── TARGETS SCREEN ──────────────────────────────────────────────
-const TargetsScreen = ({ onBack, params, setParams }) => {
+const TargetsScreen = ({ onBack, params, setParams, sendCmd }) => {
+  const send = sendCmd || (()=>{});
   const day = 12;
   const totalDays = params.duration;
   const phases = [
@@ -1264,6 +1294,11 @@ const TargetsScreen = ({ onBack, params, setParams }) => {
     {label:'Pré-éclosion',from:params.eclosionDay,to:totalDays-1,color:C.yellow,icon:'egg'},
     {label:'Éclosion',from:totalDays,to:totalDays,color:C.green,icon:'egg'},
   ];
+  const applyAll = () => {
+    send({temp: params.tempTarget, hum: params.humTarget, co2: params.co2Max});
+    send({incub_cmd:'save', duree: params.duration, eclos_day: params.eclosionDay});
+    send({motor_cmd:'save', turn_min: params.turnInterval});
+  };
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -1272,6 +1307,9 @@ const TargetsScreen = ({ onBack, params, setParams }) => {
           <Icon name="back" size={18} color={C.accent}/><span style={{fontFamily:'Barlow Condensed',fontSize:12,letterSpacing:2}}>RETOUR</span>
         </button>
         <span style={{fontFamily:'Barlow Condensed',fontSize:16,color:C.text,letterSpacing:3,fontWeight:700}}>CIBLES & PHASES</span>
+        <button onClick={applyAll} style={{marginLeft:'auto',padding:'6px 18px',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,fontWeight:700}}>
+          ✅ APPLIQUER
+        </button>
       </div>
       <div style={{flex:1,display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,padding:16,overflowY:'auto'}}>
         {/* Timeline */}
@@ -1376,11 +1414,17 @@ const TargetsScreen = ({ onBack, params, setParams }) => {
 };
 
 // ─── LIGHTS SCREEN ───────────────────────────────────────────────
-const LightsScreen = ({ onBack }) => {
+const LightsScreen = ({ onBack, sendCmd }) => {
   const [lights, setLights] = React.useState({ch8:false,ch9:false,ch10:false,ch11:false,internal:false,lock:false});
+  const send = sendCmd || (()=>{});
   const Toggle = ({id,label,color=C.accent}) => (
-    <div style={{background:C.bgCard,border:`1px solid ${lights[id]?color+'44':C.border}`,borderRadius:10,padding:16,display:'flex',flexDirection:'column',alignItems:'center',gap:10,cursor:'pointer',transition:'all 0.2s'}} onClick={()=>setLights(l=>({...l,[id]:!l[id]}))}>
-      <div style={{width:40,height:40,borderRadius:'50%',background:lights[id]?`${color}30`:C.bgPanel,border:`2px solid ${lights[id]?color:C.border}`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:lights[id]?`0 0 16px ${color}66`:undefined,transition:'all 0.3s'}}>
+    <div style={{background:C.bgCard,border:`1px solid ${lights[id]?color+'44':C.border}`,borderRadius:10,padding:16,display:'flex',flexDirection:'column',alignItems:'center',gap:10,cursor:'pointer',transition:'all 0.2s'}}
+      onClick={()=>{
+        const newVal = !lights[id];
+        setLights(l=>({...l,[id]:newVal}));
+        if(id==='lock') send({light_cmd: newVal?'lock_on':'lock_off'});
+        else send({light_cmd: `toggle_${id}`});
+      }}>      <div style={{width:40,height:40,borderRadius:'50%',background:lights[id]?`${color}30`:C.bgPanel,border:`2px solid ${lights[id]?color:C.border}`,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:lights[id]?`0 0 16px ${color}66`:undefined,transition:'all 0.3s'}}>
         <Icon name={id==='lock'?'lock':'light'} size={18} color={lights[id]?color:C.textDim}/>
       </div>
       <span style={{fontSize:10,color:lights[id]?color:C.textDim,letterSpacing:1,textAlign:'center'}}>{label}</span>
@@ -1591,15 +1635,15 @@ const App = () => {
       </div>
       <div style={{flex:1,overflow:'hidden'}}>
         {screen==='dashboard' && <Dashboard state={state} onNavigate={setScreen}/>}
-        {screen==='settings'  && <SettingsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams}/>}
+        {screen==='settings'  && <SettingsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams} sendCmd={sendCmd}/>}
         {screen==='motor'     && <MotorScreen onBack={()=>setScreen('dashboard')} state={state}/>}
         {screen==='stats'     && <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
         {screen==='fan'       && <FanScreen onBack={()=>setScreen('dashboard')} state={state} setState={()=>{}}/>}
         {screen==='trappe'    && <FanScreen onBack={()=>setScreen('dashboard')} state={state} setState={()=>{}}/>}
-        {screen==='lights'    && <LightsScreen onBack={()=>setScreen('dashboard')}/>}
+        {screen==='lights'    && <LightsScreen onBack={()=>setScreen('dashboard')} sendCmd={sendCmd}/>}
         {screen==='wifi'      && <WiFiScreen onBack={()=>setScreen('dashboard')}/>}
-        {screen==='calib'     && <CalibScreen onBack={()=>setScreen('dashboard')}/>}
-        {screen==='targets'   && <TargetsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams}/>}
+        {screen==='calib'     && <CalibScreen onBack={()=>setScreen('dashboard')} sendCmd={sendCmd}/>}
+        {screen==='targets'   && <TargetsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams} sendCmd={sendCmd}/>}
         {screen==='graph'     && <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
         {screen==='reboot_log'&& <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
       </div>
