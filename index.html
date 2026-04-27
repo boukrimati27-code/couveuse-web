@@ -301,7 +301,8 @@ const StatusBar = ({ heat, humid, water, door, system, fan }) => {
 };
 
 // ─── SHORTCUT PANEL (bottom right) ───────────────────────────────
-const ShortcutPanel = ({ turnCount, turnRemaining, motorDir, servoOpen, fanSpeed, day, onNavigate }) => {
+const ShortcutPanel = ({ turnCount, turnRemaining, motorDir, servoOpen, fanSpeed, day, totalDays, onNavigate }) => {
+  const td = totalDays || 21;
   const mins = Math.floor(turnRemaining / 60);
   const secs = turnRemaining % 60;
   return (
@@ -347,20 +348,20 @@ const ShortcutPanel = ({ turnCount, turnRemaining, motorDir, servoOpen, fanSpeed
           <div>
             <div style={{fontSize:9,color:C.accentDim,marginBottom:1}}>INCUBATION</div>
             <span style={{fontFamily:'Share Tech Mono',fontSize:18,color:C.accent}}>J{day}</span>
-            <span style={{fontSize:9,color:C.accentDim,marginLeft:4}}>/ 21</span>
+            <span style={{fontSize:9,color:C.accentDim,marginLeft:4}}>/ {td}</span>
           </div>
           <div style={{width:32,height:32}}>
             <svg viewBox="0 0 32 32">
               <circle cx="16" cy="16" r="13" fill="none" stroke="#1e2630" strokeWidth="3"/>
               <circle cx="16" cy="16" r="13" fill="none" stroke={C.accent} strokeWidth="3"
-                strokeDasharray={`${(day/21)*81.7} 100`} strokeDashoffset="20.4"
+                strokeDasharray={`${(day/td)*81.7} 100`} strokeDashoffset="20.4"
                 strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${C.accent})`}}/>
             </svg>
           </div>
         </div>
         {/* Progress bar jours */}
         <div style={{marginTop:4,height:2,background:C.border,borderRadius:1}}>
-          <div style={{height:'100%',width:`${(day/21)*100}%`,background:C.accent,borderRadius:1}}/>
+          <div style={{height:'100%',width:`${(day/td)*100}%`,background:C.accent,borderRadius:1}}/>
         </div>
       </div>
     </div>
@@ -589,16 +590,33 @@ const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
 
 // ─── MOTOR SCREEN ────────────────────────────────────────────────
 const MotorScreen = ({ onBack, state }) => {
-  const [dir, setDir] = React.useState('STOP');
+  const [dir, setDir] = React.useState(state.motorDir || 'STOP');
   const [running, setRunning] = React.useState(false);
   const pos = dir==='LEFT' ? 20 : dir==='RIGHT' ? 80 : 50;
   const send = state.sendCmd || (()=>{});
 
+  // Sync direction with live ESP32 state when not actively running manual command
+  React.useEffect(() => {
+    if (!running) setDir(state.motorDir || 'STOP');
+  }, [state.motorDir, running]);
+
   const startMotor = (d) => {
     setDir(d); setRunning(true);
     send({motor_cmd: d==='LEFT' ? 'go_left' : 'go_right'});
-    setTimeout(()=>{setRunning(false);setDir('STOP');},3000);
+    setTimeout(()=>setRunning(false), 3000);
   };
+
+  // Compute elapsed since last turn
+  const dernierLabel = (() => {
+    const epoch = state.lastTurnEpoch || 0;
+    if (!epoch) return '--:--';
+    const nowSec = Math.floor(Date.now() / 1000);
+    const elapsed = nowSec - epoch;
+    if (elapsed < 0 || elapsed > 86400 * 30) return '--:--';
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  })();
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -669,7 +687,7 @@ const MotorScreen = ({ onBack, state }) => {
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
             {[
               {label:'RETOURNEMENTS',val:`${state.turnCount}×`,color:C.accent},
-              {label:'DERNIER',val:'02:34',color:C.textMid},
+              {label:'DERNIER',val:dernierLabel,color:C.textMid},
               {label:'PROCHAIN',val:`${String(Math.floor(state.turnRemaining/60)).padStart(2,'0')}:${String(state.turnRemaining%60).padStart(2,'0')}`,color:C.orange},
             ].map(s=>(
               <div key={s.label} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 8px',textAlign:'center'}}>
@@ -714,12 +732,20 @@ const MotorScreen = ({ onBack, state }) => {
 // ─── STATS SCREEN ────────────────────────────────────────────────
 const StatsScreen = ({ onBack, state }) => {
   const [tab, setTab] = React.useState('bilan');
-  const alarms = [
-    {type:'T> MAX',time:'08:32',val:'38.4°C',active:false},
-    {type:'PORTE OUV',time:'07:15',val:'—',active:false},
-    {type:'T< MIN',time:'06:44',val:'36.2°C',active:false},
-    {type:'MANQ.EAU',time:'Hier',val:'—',active:false},
-  ];
+  const alarms = state.alarmLog && state.alarmLog.length > 0
+    ? state.alarmLog.map(a => ({type:a.type, time:a.time, val:a.val !== undefined ? String(a.val.toFixed(1)) : '—', active:a.on}))
+    : [];
+
+  // Format epoch seconds → DD/MM/YYYY
+  const fmtDate = (epochSec, offsetDays=0) => {
+    if (!epochSec) return '--/--/----';
+    const d = new Date((epochSec + offsetDays * 86400) * 1000);
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  };
+  const ep = state.incubEpoch || 0;
+  const td = state.totalDays || 21;
+  const ed = state.eclosDay  || 18;
+  const curDay = state.day || 0;
   const SimpleGraph = ({ data, color, label, unit }) => {
     const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
     const w=240, h=80;
@@ -756,18 +782,18 @@ const StatsScreen = ({ onBack, state }) => {
         {tab==='bilan' && (
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
             {[
-              {label:'JOUR INCUBATION',val:`J${state.day}`,sub:'/ 21 jours',color:C.accent},
+              {label:'JOUR INCUBATION',val:`J${curDay}`,sub:`/ ${td} jours`,color:C.accent},
               {label:'RETOURNEMENTS',val:`${state.turnCount}×`,sub:'depuis début',color:C.orange},
-              {label:'TAUX CHAUFFE',val:'68%',sub:'du temps',color:C.orange},
-              {label:'TAUX HUMIDIF.',val:'32%',sub:'du temps',color:C.blue},
-              {label:'T° MINIMUM',val:`${state.tempMin}°C`,sub:'enregistrée',color:C.teal},
-              {label:'T° MAXIMUM',val:`${state.tempMax}°C`,sub:'enregistrée',color:C.red},
-              {label:'HR MINIMUM',val:`${state.humMin}%`,sub:'enregistrée',color:C.blue},
-              {label:'HR MAXIMUM',val:`${state.humMax}%`,sub:'enregistrée',color:C.teal},
-              {label:'CO2 MINIMUM',val:'412ppm',sub:'enregistré',color:C.green},
-              {label:'CO2 MAXIMUM',val:'1842ppm',sub:'enregistré',color:C.yellow},
-              {label:'MIRAGE J7',val:'12/04',sub:'Fécondité OK',color:C.green},
-              {label:'ÉCLOSION PRÉVUE',val:'30/04',sub:'dans 9 jours',color:C.accent},
+              {label:'TAUX CHAUFFE',val:state.heatPct>0?`${state.heatPct.toFixed(1)}%`:'--',sub:'du temps',color:C.orange},
+              {label:'TAUX HUMIDIF.',val:state.humidPct>0?`${state.humidPct.toFixed(1)}%`:'--',sub:'du temps',color:C.blue},
+              {label:'T° MINIMUM',val:state.tempMin>0?`${state.tempMin.toFixed(1)}°C`:'--',sub:'enregistrée',color:C.teal},
+              {label:'T° MAXIMUM',val:state.tempMax>0?`${state.tempMax.toFixed(1)}°C`:'--',sub:'enregistrée',color:C.red},
+              {label:'HR MINIMUM',val:state.humMin>0?`${state.humMin.toFixed(1)}%`:'--',sub:'enregistrée',color:C.blue},
+              {label:'HR MAXIMUM',val:state.humMax>0?`${state.humMax.toFixed(1)}%`:'--',sub:'enregistrée',color:C.teal},
+              {label:'CO2 MINIMUM',val:state.co2Min>0?`${state.co2Min}ppm`:'--',sub:'enregistré',color:C.green},
+              {label:'CO2 MAXIMUM',val:state.co2MaxStat>0?`${state.co2MaxStat}ppm`:'--',sub:'enregistré',color:C.yellow},
+              {label:'MIRAGE J7',val:fmtDate(ep,6).slice(0,5),sub:curDay>7?'Passé':'À venir',color:curDay>7?C.textDim:C.green},
+              {label:'ÉCLOSION PRÉVUE',val:fmtDate(ep,td-1).slice(0,5),sub:`dans ${state.daysLeft}j`,color:C.accent},
             ].map(s=>(
               <div key={s.label} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 12px'}}>
                 <div style={{fontSize:8,color:C.textDim,letterSpacing:1,marginBottom:4}}>{s.label}</div>
@@ -785,9 +811,9 @@ const StatsScreen = ({ onBack, state }) => {
             <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:8,padding:12}}>
               <div style={{fontSize:10,color:C.textDim,letterSpacing:1,marginBottom:8}}>DURÉES ACTIONNEURS</div>
               {[
-                {label:'Chauffage',val:'34h 12m',color:C.orange,pct:68},
-                {label:'Humidificateur',val:'16h 04m',color:C.blue,pct:32},
-                {label:'Ventilateur',val:'48h 00m',color:C.teal,pct:96},
+                {label:'Chauffage',val:state.heatTime,color:C.orange,pct:Math.round(state.heatPct)||0},
+                {label:'Humidificateur',val:state.humidTime,color:C.blue,pct:Math.round(state.humidPct)||0},
+                {label:'Ventilateur',val:'--:--:--',color:C.teal,pct:state.fan||0},
               ].map(r=>(
                 <div key={r.label} style={{marginBottom:10}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
@@ -804,7 +830,12 @@ const StatsScreen = ({ onBack, state }) => {
         )}
         {tab==='alarmes' && (
           <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            {alarms.map((a,i)=>(
+            {alarms.length === 0
+              ? <div style={{padding:'10px 14px',background:`${C.green}10`,border:`1px solid ${C.green}33`,borderRadius:8,display:'flex',gap:8,alignItems:'center'}}>
+                  <Icon name="check" size={14} color={C.green}/>
+                  <span style={{fontSize:11,color:C.green}}>Aucune alarme enregistrée — système nominal</span>
+                </div>
+              : alarms.map((a,i)=>(
               <div key={i} style={{display:'flex',alignItems:'center',gap:12,background:C.bgCard,border:`1px solid ${a.active?C.red+'44':C.border}`,borderRadius:8,padding:'10px 14px'}}>
                 <Icon name="alert" size={16} color={a.active?C.red:C.textDim}/>
                 <span style={{fontFamily:'Barlow Condensed',fontSize:13,color:a.active?C.red:C.text,letterSpacing:1,minWidth:100}}>{a.type}</span>
@@ -813,10 +844,12 @@ const StatsScreen = ({ onBack, state }) => {
                 <div style={{marginLeft:'auto',fontSize:9,color:a.active?C.red:C.green}}>{a.active?'● ACTIF':'● RÉSOLU'}</div>
               </div>
             ))}
-            <div style={{marginTop:8,padding:'10px 14px',background:`${C.green}10`,border:`1px solid ${C.green}33`,borderRadius:8,display:'flex',gap:8,alignItems:'center'}}>
-              <Icon name="check" size={14} color={C.green}/>
-              <span style={{fontSize:11,color:C.green}}>Aucune alarme active — système nominal</span>
-            </div>
+            {alarms.length > 0 && !alarms.some(a=>a.active) &&
+              <div style={{marginTop:4,padding:'10px 14px',background:`${C.green}10`,border:`1px solid ${C.green}33`,borderRadius:8,display:'flex',gap:8,alignItems:'center'}}>
+                <Icon name="check" size={14} color={C.green}/>
+                <span style={{fontSize:11,color:C.green}}>Aucune alarme active — système nominal</span>
+              </div>
+            }
           </div>
         )}
       </div>
@@ -883,9 +916,9 @@ const FanScreen = ({ onBack, state, setState }) => {
               </div>
             </div>
             {[
-              {label:'Mode auto',val:'Activé',color:C.green},
-              {label:'Seuil temp.',val:'38.5°C',color:C.orange},
-              {label:'Synchro ventilo',val:'Activé',color:C.teal},
+              {label:'Mode auto',val:state.trappe.auto_on!==undefined?(state.trappe.auto_on?'Activé':'Désactivé'):'--',color:state.trappe.auto_on?C.green:C.textDim},
+              {label:'Seuil temp.',val:state.trappe.tseuil!==undefined?`${state.trappe.tseuil.toFixed(1)}°C`:'--',color:C.orange},
+              {label:'Synchro ventilo',val:state.trappe.sync!==undefined?(state.trappe.sync?'Activé':'Désactivé'):'--',color:state.trappe.sync?C.teal:C.textDim},
               {label:'Angle ouverture',val:'90°',color:C.text},
             ].map(r=>(
               <div key={r.label} style={{display:'flex',justifyContent:'space-between',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
@@ -936,7 +969,7 @@ const Dashboard = ({ state, onNavigate }) => (
       <ShortcutPanel
         turnCount={state.turnCount} turnRemaining={state.turnRemaining}
         motorDir={state.motorDir} servoOpen={state.servoOpen}
-        fanSpeed={state.fan} day={state.day}
+        fanSpeed={state.fan} day={state.day} totalDays={state.totalDays}
         onNavigate={onNavigate}
       />
     </div>
@@ -1192,10 +1225,21 @@ const WiFiScreen = ({ onBack }) => {
 };
 
 // ─── CALIBRATION SCREEN ──────────────────────────────────────────
-const CalibScreen = ({ onBack, sendCmd }) => {
+const CalibScreen = ({ onBack, sendCmd, state }) => {
+  const calib = state?.calib || {};
   const [offsets, setOffsets] = React.useState({sht45T:0.0,sht45H:0.0,scd41T:0.0,scd41H:0.0});
   const [saved, setSaved] = React.useState(false);
   const send = sendCmd || (()=>{});
+
+  // Sync offsets from ESP32 when calib data arrives
+  React.useEffect(() => {
+    if (calib.sht45_t !== undefined) setOffsets({
+      sht45T: calib.sht45_t || 0,
+      sht45H: calib.sht45_h || 0,
+      scd41T: calib.scd41_t || 0,
+      scd41H: calib.scd41_h || 0,
+    });
+  }, [calib.sht45_t]);
 
   const save = () => {
     send({calib_cmd:'save',
@@ -1203,6 +1247,11 @@ const CalibScreen = ({ onBack, sendCmd }) => {
       scd41_temp: offsets.scd41T, scd41_hum: offsets.scd41H});
     setSaved(true); setTimeout(()=>setSaved(false),2000);
   };
+
+  const rawSht45T = calib.raw_sht45_t ?? (state?.temp || 0);
+  const rawSht45H = calib.raw_sht45_h ?? (state?.hum  || 0);
+  const rawScd41T = calib.raw_scd41_t ?? 0;
+  const rawScd41H = calib.raw_scd41_h ?? 0;
 
   const CalibRow = ({label, key_, unit, raw, color}) => {
     const corrected = +(raw + offsets[key_]).toFixed(1);
@@ -1258,8 +1307,8 @@ const CalibScreen = ({ onBack, sendCmd }) => {
             <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>Adresse 0x44</span>
             <span style={{marginLeft:'auto',fontSize:9,color:C.green}}>I2C OK</span>
           </div>
-          <CalibRow label="Température" key_="sht45T" unit="°C" raw={37.8} color={C.orange}/>
-          <CalibRow label="Humidité relative" key_="sht45H" unit="%" raw={62.4} color={C.blue}/>
+          <CalibRow label="Température" key_="sht45T" unit="°C" raw={rawSht45T} color={C.orange}/>
+          <CalibRow label="Humidité relative" key_="sht45H" unit="%" raw={rawSht45H} color={C.blue}/>
           <div style={{marginTop:12,padding:'8px 10px',background:C.bgPanel,borderRadius:6,fontSize:10,color:C.textDim,lineHeight:1.6}}>
             <strong style={{color:C.textMid}}>Conseil :</strong> Utiliser un thermomètre de référence certifié. Stabiliser 30 min avant calibration.
           </div>
@@ -1272,8 +1321,8 @@ const CalibScreen = ({ onBack, sendCmd }) => {
             <span style={{fontSize:10,color:C.textDim,marginLeft:4}}>Adresse 0x62</span>
             <span style={{marginLeft:'auto',fontSize:9,color:C.green}}>I2C OK</span>
           </div>
-          <CalibRow label="Température CO2" key_="scd41T" unit="°C" raw={37.4} color={C.orange}/>
-          <CalibRow label="Humidité CO2" key_="scd41H" unit="%" raw={60.8} color={C.blue}/>
+          <CalibRow label="Température CO2" key_="scd41T" unit="°C" raw={rawScd41T} color={C.orange}/>
+          <CalibRow label="Humidité CO2" key_="scd41H" unit="%" raw={rawScd41H} color={C.blue}/>
           <div style={{marginTop:10,display:'flex',flexDirection:'column',gap:6}}>
             <button style={{padding:'9px 0',borderRadius:8,background:`${C.teal}10`,border:`1px solid ${C.teal}33`,color:C.teal,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>CALIBRATION CO2 AIR FRAIS (400ppm)</button>
             <button style={{padding:'9px 0',borderRadius:8,background:`${C.red}10`,border:`1px solid ${C.red}22`,color:C.red,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:1}}>RESET OFFSET → 0.0</button>
@@ -1285,10 +1334,16 @@ const CalibScreen = ({ onBack, sendCmd }) => {
 };
 
 // ─── TARGETS SCREEN ──────────────────────────────────────────────
-const TargetsScreen = ({ onBack, params, setParams, sendCmd }) => {
+const TargetsScreen = ({ onBack, params, setParams, sendCmd, state }) => {
   const send = sendCmd || (()=>{});
-  const day = 12;
+  const day = state?.day || 0;
   const totalDays = params.duration;
+  const ep = state?.incubEpoch || 0;
+  const fmtDate = (epochSec, offsetDays=0) => {
+    if (!epochSec) return '--/--/----';
+    const d = new Date((epochSec + offsetDays * 86400) * 1000);
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  };
   const phases = [
     {label:'Incubation',from:1,to:params.eclosionDay-1,color:C.orange,icon:'flame'},
     {label:'Pré-éclosion',from:params.eclosionDay,to:totalDays-1,color:C.yellow,icon:'egg'},
@@ -1296,8 +1351,7 @@ const TargetsScreen = ({ onBack, params, setParams, sendCmd }) => {
   ];
   const applyAll = () => {
     send({temp: params.tempTarget, hum: params.humTarget, co2: params.co2Max});
-    send({incub_cmd:'save', duree: params.duration, eclos_day: params.eclosionDay});
-    send({motor_cmd:'save', turn_min: params.turnInterval});
+    send({incub_cmd:'save', duree: params.duration, eclos_day: params.eclosionDay, turn_min: params.turnInterval});
   };
 
   return (
@@ -1346,12 +1400,12 @@ const TargetsScreen = ({ onBack, params, setParams, sendCmd }) => {
           <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,padding:14}}>
             <div style={{fontSize:10,color:C.textDim,letterSpacing:2,marginBottom:10}}>DATES CLÉS</div>
             {[
-              {label:'Début incubation',val:'09/04/2025',color:C.textMid},
-              {label:'Mirage J7',val:'16/04/2025',color:C.teal, done:true},
-              {label:'Mirage J14',val:'23/04/2025',color:C.yellow},
-              {label:'Arrêt retournement (J18)',val:'27/04/2025',color:C.orange},
-              {label:'Début éclosion (J18)',val:'27/04/2025',color:C.green},
-              {label:'Éclosion prévue (J21)',val:'30/04/2025',color:C.accent},
+              {label:'Début incubation',val:fmtDate(ep,0),color:C.textMid,done:false},
+              {label:'Mirage J7',val:fmtDate(ep,6),color:C.teal,done:day>7},
+              {label:'Mirage J14',val:fmtDate(ep,13),color:C.yellow,done:day>14},
+              {label:`Arrêt retournement (J${params.eclosionDay})`,val:fmtDate(ep,params.eclosionDay-1),color:C.orange,done:day>=params.eclosionDay},
+              {label:`Début éclosion (J${params.eclosionDay})`,val:fmtDate(ep,params.eclosionDay-1),color:C.green,done:day>=params.eclosionDay},
+              {label:`Éclosion prévue (J${totalDays})`,val:fmtDate(ep,totalDays-1),color:C.accent,done:false},
             ].map((r,i)=>(
               <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
                 <div style={{display:'flex',alignItems:'center',gap:6}}>
@@ -1514,7 +1568,9 @@ const App = () => {
       humMargin:   d.hum_margin  || p.humMargin,
       co2Max:      d.co2_alarm,
       turnInterval:d.motor ? d.motor.interval_min : p.turnInterval,
+      motorMs:     d.motor?.travel_ms || p.motorMs,
       duration:    d.incub ? d.incub.total_days   : p.duration,
+      eclosionDay: d.incub ? d.incub.eclos_day    : p.eclosionDay,
     }));
   }, []);
 
@@ -1594,10 +1650,27 @@ const App = () => {
     servoOpen: d.trappe ? d.trappe.open  : false,
     motorDir:  d.motor  ? d.motor.dir    : 'STOP',
     turnCount: d.turn_count || 0,
-    turnRemaining: d.motor ? d.motor.interval_min * 60 : 0,
+    turnRemaining: d.motor ? (d.motor.next_turn_s || d.motor.interval_min * 60) : 0,
+    lastTurnEpoch: d.motor ? (d.motor.last_turn_epoch || 0) : 0,
     day:       d.incub  ? d.incub.day    : 0,
+    daysLeft:  d.incub  ? d.incub.days_left  : 0,
+    totalDays: d.incub  ? d.incub.total_days : 21,
+    eclosDay:  d.incub  ? d.incub.eclos_day  : 18,
+    incubEpoch:d.incub  ? d.incub.epoch      : 0,
+    heatPct:   d.incub  ? d.incub.heat_pct   : 0,
+    humidPct:  d.incub  ? d.incub.humid_pct  : 0,
+    tempMin: d.stats?.tmin   || 0,
+    tempMax: d.stats?.tmax   || 0,
+    humMin:  d.stats?.hmin   || 0,
+    humMax:  d.stats?.hmax   || 0,
+    co2Min:  d.stats?.co2min || 0,
+    co2MaxStat: d.stats?.co2max || 0,
+    heatTime:  d.stats?.heat_time  || '--:--:--',
+    humidTime: d.stats?.humid_time || '--:--:--',
+    alarmLog:  d.alarms  || [],
+    calib:     d.calib   || {},
+    trappe:    d.trappe  || {},
     params, sendCmd, mqttStatus,
-    tempMin: 36, tempMax: 40, humMin: 50, humMax: 75,
   };
 
   // Tweaks setup
@@ -1642,8 +1715,8 @@ const App = () => {
         {screen==='trappe'    && <FanScreen onBack={()=>setScreen('dashboard')} state={state} setState={()=>{}}/>}
         {screen==='lights'    && <LightsScreen onBack={()=>setScreen('dashboard')} sendCmd={sendCmd}/>}
         {screen==='wifi'      && <WiFiScreen onBack={()=>setScreen('dashboard')}/>}
-        {screen==='calib'     && <CalibScreen onBack={()=>setScreen('dashboard')} sendCmd={sendCmd}/>}
-        {screen==='targets'   && <TargetsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams} sendCmd={sendCmd}/>}
+        {screen==='calib'     && <CalibScreen onBack={()=>setScreen('dashboard')} sendCmd={sendCmd} state={state}/>}
+        {screen==='targets'   && <TargetsScreen onBack={()=>setScreen('dashboard')} params={params} setParams={setParams} sendCmd={sendCmd} state={state}/>}
         {screen==='graph'     && <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
         {screen==='reboot_log'&& <StatsScreen onBack={()=>setScreen('dashboard')} state={state}/>}
       </div>
