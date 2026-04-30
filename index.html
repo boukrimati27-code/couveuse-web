@@ -482,13 +482,16 @@ const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
   const [tab, setTab] = React.useState('regulation');
   const [pinInput, setPinInput] = React.useState('');
   const [unlocked, setUnlocked] = React.useState(false);
+  // Copie locale : isolée du poll HTTP/MQTT, ne revient jamais en arrière
+  const [local, setLocal] = React.useState(() => ({...params}));
   const send = sendCmd || (()=>{});
 
-  // Appliquer les cibles vers l'ESP32
-  const applyParams = (p) => {
-    send({temp: p.tempTarget, hum: p.humTarget, co2: p.co2Max});
-    send({motor_cmd:'turn_inc', turn_min: p.turnInterval});
-    send({incub_cmd:'save', duree: p.duration, eclos_day: p.eclosionDay});
+  // Appliquer : commit vers le global params + envoi ESP32
+  const applyParams = () => {
+    setParams(local);
+    send({temp: local.tempTarget, hum: local.humTarget, co2: local.co2Max});
+    send({motor_cmd:'turn_inc', turn_min: local.turnInterval});
+    send({incub_cmd:'save', duree: local.duration, eclos_day: local.eclosionDay});
   };
 
   const tabs = [
@@ -524,7 +527,7 @@ const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
               <Icon name="lock" size={14} color={C.accentDim}/>
               <span style={{fontSize:10,color:C.accentDim}}>PIN requis pour modifier</span>
             </div>
-          : <button onClick={()=>applyParams(params)} style={{marginLeft:'auto',padding:'6px 18px',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,fontWeight:700}}>
+          : <button onClick={applyParams} style={{marginLeft:'auto',padding:'6px 18px',borderRadius:8,background:`${C.green}20`,border:`1px solid ${C.green}44`,color:C.green,cursor:'pointer',fontFamily:'Barlow Condensed',fontSize:11,letterSpacing:2,fontWeight:700}}>
               ✅ APPLIQUER
             </button>
         }
@@ -564,34 +567,34 @@ const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
           </div>
         ) : tab==='regulation' ? (
           <div>
-            <Row label="Température cible"><NumControl value={params.tempTarget} onChange={v=>setParams(p=>({...p,tempTarget:v}))} step={0.1} unit="°C"/></Row>
-            <Row label="Marge chauffage ±"><NumControl value={params.tempMargin} onChange={v=>setParams(p=>({...p,tempMargin:v}))} step={0.1} unit="°C"/></Row>
-            <Row label="Humidité cible"><NumControl value={params.humTarget} onChange={v=>setParams(p=>({...p,humTarget:v}))} step={1} unit="%"/></Row>
-            <Row label="Marge humidificateur ±"><NumControl value={params.humMargin} onChange={v=>setParams(p=>({...p,humMargin:v}))} step={1} unit="%"/></Row>
-            <Row label="Seuil alarme CO2"><NumControl value={params.co2Max} onChange={v=>setParams(p=>({...p,co2Max:v}))} step={100} unit="ppm"/></Row>
+            <Row label="Température cible"><NumControl value={local.tempTarget} onChange={v=>setLocal(p=>({...p,tempTarget:v}))} step={0.1} unit="°C"/></Row>
+            <Row label="Marge chauffage ±"><NumControl value={local.tempMargin} onChange={v=>setLocal(p=>({...p,tempMargin:v}))} step={0.1} unit="°C"/></Row>
+            <Row label="Humidité cible"><NumControl value={local.humTarget} onChange={v=>setLocal(p=>({...p,humTarget:v}))} step={1} unit="%"/></Row>
+            <Row label="Marge humidificateur ±"><NumControl value={local.humMargin} onChange={v=>setLocal(p=>({...p,humMargin:v}))} step={1} unit="%"/></Row>
+            <Row label="Seuil alarme CO2"><NumControl value={local.co2Max} onChange={v=>setLocal(p=>({...p,co2Max:v}))} step={100} unit="ppm"/></Row>
           </div>
         ) : tab==='incubation' ? (
           <div>
-            <Row label="Durée incubation"><NumControl value={params.duration} onChange={v=>setParams(p=>({...p,duration:v}))} step={1} unit="j"/></Row>
-            <Row label="Intervalle retournement"><NumControl value={params.turnInterval} onChange={v=>setParams(p=>({...p,turnInterval:v}))} step={5} unit="min"/></Row>
-            <Row label="Début phase éclosion"><NumControl value={params.eclosionDay} onChange={v=>setParams(p=>({...p,eclosionDay:v}))} step={1} unit="J"/></Row>
-            <Row label="Humidité éclosion"><NumControl value={params.humEclosion} onChange={v=>setParams(p=>({...p,humEclosion:v}))} step={1} unit="%"/></Row>
-            <Row label="Durée trajet moteur"><NumControl value={params.motorMs/1000} onChange={v=>setParams(p=>({...p,motorMs:v*1000}))} step={0.5} unit="s"/></Row>
+            <Row label="Durée incubation"><NumControl value={local.duration} onChange={v=>setLocal(p=>({...p,duration:v}))} step={1} unit="j"/></Row>
+            <Row label="Intervalle retournement"><NumControl value={local.turnInterval} onChange={v=>setLocal(p=>({...p,turnInterval:v}))} step={5} unit="min"/></Row>
+            <Row label="Début phase éclosion"><NumControl value={local.eclosionDay} onChange={v=>setLocal(p=>({...p,eclosionDay:v}))} step={1} unit="J"/></Row>
+            <Row label="Humidité éclosion"><NumControl value={local.humEclosion} onChange={v=>setLocal(p=>({...p,humEclosion:v}))} step={1} unit="%"/></Row>
+            <Row label="Durée trajet moteur"><NumControl value={local.motorMs/1000} onChange={v=>setLocal(p=>({...p,motorMs:v*1000}))} step={0.5} unit="s"/></Row>
           </div>
         ) : tab==='alertes' ? (
           <div>
             <Row label="Telegram activé">
-              <div onClick={()=>setParams(p=>({...p,telegram:!p.telegram}))} style={{width:44,height:24,borderRadius:12,background:params.telegram?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
-                <div style={{position:'absolute',top:3,left:params.telegram?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+              <div onClick={()=>setLocal(p=>({...p,telegram:!p.telegram}))} style={{width:44,height:24,borderRadius:12,background:local.telegram?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                <div style={{position:'absolute',top:3,left:local.telegram?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
               </div>
             </Row>
             <Row label="Alerte CO2 dépassé">
-              <div onClick={()=>setParams(p=>({...p,alertCO2:!p.alertCO2}))} style={{width:44,height:24,borderRadius:12,background:params.alertCO2?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
-                <div style={{position:'absolute',top:3,left:params.alertCO2?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
+              <div onClick={()=>setLocal(p=>({...p,alertCO2:!p.alertCO2}))} style={{width:44,height:24,borderRadius:12,background:local.alertCO2?C.accent:C.border,position:'relative',cursor:'pointer',transition:'background 0.2s'}}>
+                <div style={{position:'absolute',top:3,left:local.alertCO2?23:3,width:18,height:18,borderRadius:'50%',background:'white',transition:'left 0.2s'}}/>
               </div>
             </Row>
             <Row label="Screensaver">
-              <select value={params.screensaver} onChange={e=>setParams(p=>({...p,screensaver:e.target.value}))} style={{background:C.bgCard,color:C.text,border:`1px solid ${C.border}`,borderRadius:6,padding:'4px 8px',fontFamily:'Barlow Condensed',fontSize:12}}>
+              <select value={local.screensaver} onChange={e=>setLocal(p=>({...p,screensaver:e.target.value}))} style={{background:C.bgCard,color:C.text,border:`1px solid ${C.border}`,borderRadius:6,padding:'4px 8px',fontFamily:'Barlow Condensed',fontSize:12}}>
                 <option value="5s">5 secondes</option><option value="5min">5 minutes</option><option value="20min">20 minutes</option><option value="off">OFF</option>
               </select>
             </Row>
@@ -1492,8 +1495,10 @@ const CalibScreen = ({ onBack, sendCmd, state }) => {
 // ─── TARGETS SCREEN ──────────────────────────────────────────────
 const TargetsScreen = ({ onBack, params, setParams, sendCmd, state }) => {
   const send = sendCmd || (()=>{});
+  // Copie locale isolée du poll
+  const [local, setLocal] = React.useState(() => ({...params}));
   const day = state?.day || 0;
-  const totalDays = params.duration;
+  const totalDays = local.duration;
   const ep = state?.incubEpoch || 0;
   const fmtDate = (epochSec, offsetDays=0) => {
     if (!epochSec) return '--/--/----';
@@ -1501,13 +1506,14 @@ const TargetsScreen = ({ onBack, params, setParams, sendCmd, state }) => {
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   };
   const phases = [
-    {label:'Incubation',from:1,to:params.eclosionDay-1,color:C.orange,icon:'flame'},
-    {label:'Pré-éclosion',from:params.eclosionDay,to:totalDays-1,color:C.yellow,icon:'egg'},
+    {label:'Incubation',from:1,to:local.eclosionDay-1,color:C.orange,icon:'flame'},
+    {label:'Pré-éclosion',from:local.eclosionDay,to:totalDays-1,color:C.yellow,icon:'egg'},
     {label:'Éclosion',from:totalDays,to:totalDays,color:C.green,icon:'egg'},
   ];
   const applyAll = () => {
-    send({temp: params.tempTarget, hum: params.humTarget, co2: params.co2Max});
-    send({incub_cmd:'save', duree: params.duration, eclos_day: params.eclosionDay, turn_min: params.turnInterval});
+    setParams(local);
+    send({temp: local.tempTarget, hum: local.humTarget, co2: local.co2Max});
+    send({incub_cmd:'save', duree: local.duration, eclos_day: local.eclosionDay, turn_min: local.turnInterval});
   };
 
   return (
@@ -1559,8 +1565,8 @@ const TargetsScreen = ({ onBack, params, setParams, sendCmd, state }) => {
               {label:'Début incubation',val:fmtDate(ep,0),color:C.textMid,done:false},
               {label:'Mirage J7',val:fmtDate(ep,6),color:C.teal,done:day>7},
               {label:'Mirage J14',val:fmtDate(ep,13),color:C.yellow,done:day>14},
-              {label:`Arrêt retournement (J${params.eclosionDay})`,val:fmtDate(ep,params.eclosionDay-1),color:C.orange,done:day>=params.eclosionDay},
-              {label:`Début éclosion (J${params.eclosionDay})`,val:fmtDate(ep,params.eclosionDay-1),color:C.green,done:day>=params.eclosionDay},
+              {label:`Arrêt retournement (J${local.eclosionDay})`,val:fmtDate(ep,local.eclosionDay-1),color:C.orange,done:day>=local.eclosionDay},
+              {label:`Début éclosion (J${local.eclosionDay})`,val:fmtDate(ep,local.eclosionDay-1),color:C.green,done:day>=local.eclosionDay},
               {label:`Éclosion prévue (J${totalDays})`,val:fmtDate(ep,totalDays-1),color:C.accent,done:false},
             ].map((r,i)=>(
               <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:`1px solid ${C.border}`,padding:'7px 0'}}>
@@ -1582,7 +1588,7 @@ const TargetsScreen = ({ onBack, params, setParams, sendCmd, state }) => {
               {phase:'PRÉ-ÉCLOSION (J18–J20)',temp:'37.5°C',hum:'70%',turn:'✗',color:C.yellow},
               {phase:'ÉCLOSION (J21)',temp:'37.2°C',hum:'75%',turn:'✗',color:C.green},
             ].map((ph,i)=>(
-              <div key={i} style={{background:day>=([1,params.eclosionDay,totalDays][i]) && day<=([params.eclosionDay-1,totalDays-1,totalDays][i]) ? `${ph.color}10`:'transparent',border:`1px solid ${day>=([1,params.eclosionDay,totalDays][i]) && day<=([params.eclosionDay-1,totalDays-1,totalDays][i])?ph.color+'33':C.border}`,borderRadius:8,padding:'10px 12px',marginBottom:8}}>
+              <div key={i} style={{background:day>=([1,local.eclosionDay,totalDays][i]) && day<=([local.eclosionDay-1,totalDays-1,totalDays][i]) ? `${ph.color}10`:'transparent',border:`1px solid ${day>=([1,local.eclosionDay,totalDays][i]) && day<=([local.eclosionDay-1,totalDays-1,totalDays][i])?ph.color+'33':C.border}`,borderRadius:8,padding:'10px 12px',marginBottom:8}}>
                 <div style={{fontSize:9,color:ph.color,letterSpacing:1,marginBottom:6}}>{ph.phase}</div>
                 <div style={{display:'flex',gap:12}}>
                   <div style={{textAlign:'center'}}>
