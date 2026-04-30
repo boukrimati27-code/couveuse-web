@@ -490,8 +490,7 @@ const SettingsScreen = ({ onBack, params, setParams, sendCmd }) => {
   const applyParams = () => {
     setParams(local);
     send({temp: local.tempTarget, hum: local.humTarget, co2: local.co2Max});
-    send({motor_cmd:'turn_inc', turn_min: local.turnInterval});
-    send({incub_cmd:'save', duree: local.duration, eclos_day: local.eclosionDay});
+    send({incub_cmd:'save', duree: local.duration, eclos_day: local.eclosionDay, turn_min: local.turnInterval});
   };
 
   const tabs = [
